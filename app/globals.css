@@ -1,0 +1,17 @@
+@import url('https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500,600,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'General Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+  background: #0f0d10;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #0f0d10;
+  font-family: var(--font-sans);
+}
