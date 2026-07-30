@@ -146,6 +146,9 @@ function EraCarousel() {
     return () => clearInterval(id)
   }, [])
 
+  const goNext = () => setIndex((i) => (i + 1) % ERAS.length)
+  const goPrev = () => setIndex((i) => (i - 1 + ERAS.length) % ERAS.length)
+
   return (
     <div className="flex flex-col items-center">
       <div className="relative flex h-[26rem] w-full items-center justify-center overflow-hidden">
@@ -162,6 +165,13 @@ function EraCarousel() {
                 scale: pos === 0 ? 1 : 0.85,
               }}
               transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+              drag={pos === 0 ? 'x' : false}
+              dragConstraints={{ left: -160, right: 160 }}
+              dragElastic={0.6}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -60 || info.velocity.x < -400) goNext()
+                else if (info.offset.x > 60 || info.velocity.x > 400) goPrev()
+              }}
             >
               <Card className="relative h-[26rem] overflow-hidden">
                 {(era.visual === 'tv' || era.visual === 'computer') && (
