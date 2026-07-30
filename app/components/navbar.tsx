@@ -12,6 +12,7 @@ const APP_STORE_URL = 'https://apps.apple.com/app/id6760572115'
 const NAV_ITEMS: { label: string; href: string }[] = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/#about' },
+  { label: 'Partner', href: '/partner' },
   { label: 'Support', href: 'mailto:support@showmecities.com' },
 ]
 

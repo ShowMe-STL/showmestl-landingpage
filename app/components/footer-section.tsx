@@ -4,50 +4,19 @@ import { useState } from 'react'
 import Image from 'next/image'
 import type { ComponentProps, ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { siFacebook, siInstagram, siTiktok } from 'simple-icons'
+import { siInstagram } from 'simple-icons'
 import { QRCode } from './qr-code'
 import { InstallQrModal } from './install-qr-modal'
 
 const APP_STORE_URL = 'https://apps.apple.com/app/id6760572115'
 
-interface FooterLink {
-  title: string
-  href: string
-  external?: boolean
-  icon?: React.ComponentType<{ className?: string }>
-}
-
-interface FooterColumn {
-  label: string
-  links: FooterLink[]
-}
-
-const footerLinks: FooterColumn[] = [
-  {
-    label: 'Pages',
-    links: [
-      { title: 'Home', href: '/' },
-      { title: 'About', href: '/#about' },
-      { title: 'Support', href: 'mailto:support@showmecities.com' },
-    ],
-  },
-  {
-    label: 'Company',
-    links: [
-      { title: 'Apps', href: 'https://showmecities.com', external: true },
-      { title: 'Privacy', href: 'https://showmecities.com/privacy-policy', external: true },
-      { title: 'Terms', href: 'https://showmecities.com/terms-of-service', external: true },
-    ],
-  },
-]
-
 export function Footer() {
   const [qrOpen, setQrOpen] = useState(false)
   return (
-    <footer className="relative mx-auto flex w-full max-w-[72rem] flex-col items-center justify-center rounded-t-4xl border-t border-white/10 bg-[radial-gradient(35%_128px_at_50%_0%,rgba(255,255,255,0.08),transparent)] px-6 pt-12 pb-32 md:rounded-t-[3rem] lg:pt-16 lg:pb-48">
+    <footer className="relative mx-auto flex w-full max-w-[72rem] flex-col items-center justify-center rounded-t-4xl border-t border-white/10 bg-[radial-gradient(35%_128px_at_50%_0%,rgba(255,255,255,0.08),transparent)] px-6 pt-12 pb-16 md:rounded-t-[3rem] lg:pt-16 lg:pb-20">
       <div className="absolute top-0 left-1/2 right-1/2 h-px w-1/3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/20 blur" />
 
-      <div className="grid w-full grid-cols-[1fr_auto_auto] items-start gap-6 sm:gap-8 md:grid-cols-[1fr_auto_auto_auto] md:gap-10 xl:gap-12">
+      <div className="grid w-full grid-cols-[1fr_auto] items-start gap-6 sm:gap-8 md:gap-10 xl:gap-12">
         <AnimatedContainer className="space-y-4">
           <a href="/" className="flex w-fit items-center gap-2">
             <div className="relative h-8 w-8 overflow-hidden rounded-md">
@@ -88,51 +57,10 @@ export function Footer() {
             >
               <InstagramIcon className="size-6" />
             </a>
-            <a
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Facebook"
-              className="transition-colors hover:text-white"
-            >
-              <FacebookIcon className="size-6" />
-            </a>
-            <a
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="TikTok"
-              className="transition-colors hover:text-white"
-            >
-              <TikTokIcon className="size-6" />
-            </a>
           </div>
         </AnimatedContainer>
 
-        {footerLinks.map((section, index) => (
-          <AnimatedContainer key={section.label} delay={0.1 + index * 0.1}>
-            <div>
-              <h3 className="text-xs text-white/80">{section.label}</h3>
-              <ul className="mt-4 space-y-2 text-sm text-white/50">
-                {section.links.map((link) => (
-                  <li key={link.title}>
-                    <a
-                      href={link.href}
-                      target={link.external ? '_blank' : undefined}
-                      rel={link.external ? 'noopener noreferrer' : undefined}
-                      className="inline-flex items-center transition-colors duration-300 hover:text-white"
-                    >
-                      {link.icon && <link.icon className="me-1 size-4" />}
-                      {link.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </AnimatedContainer>
-        ))}
-
-        <AnimatedContainer delay={0.4} className="hidden justify-self-start md:block xl:justify-self-end">
+        <AnimatedContainer delay={0.2} className="hidden justify-self-start md:block xl:justify-self-end">
           <div className="flex flex-col items-start gap-3">
             <div className="flex items-center gap-1.5 text-xs text-white/80">
               <AppleIcon className="size-3.5" />
@@ -186,22 +114,6 @@ function InstagramIcon(props: ComponentProps<'svg'>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d={siInstagram.path} />
-    </svg>
-  )
-}
-
-function TikTokIcon(props: ComponentProps<'svg'>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d={siTiktok.path} />
-    </svg>
-  )
-}
-
-function FacebookIcon(props: ComponentProps<'svg'>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d={siFacebook.path} />
     </svg>
   )
 }
