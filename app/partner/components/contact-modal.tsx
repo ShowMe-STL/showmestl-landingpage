@@ -118,7 +118,7 @@ export function ContactModal({ open, onClose }: ContactModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@yourbusiness.com"
-                    className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm text-white placeholder:text-white/30 focus:border-[#FF3B30]/50 focus:outline-none"
+                    className="rounded-full border border-white/15 bg-white/5 px-5 py-3 text-base text-white placeholder:text-white/30 focus:border-[#FF3B30]/50 focus:outline-none"
                   />
                   <input
                     type="text"

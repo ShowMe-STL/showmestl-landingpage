@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer'
 
-const NOTIFY_EMAILS = [process.env.GMAIL_USER, 'jack@agrippacreatives.com'].filter(Boolean).join(', ')
+const NOTIFY_EMAILS = [...new Set([process.env.GMAIL_USER, 'jack@agrippacreatives.com', 'izayahhudnut@gmail.com'])]
+  .filter(Boolean)
+  .join(', ')
 
 export async function POST(request: Request) {
   try {
