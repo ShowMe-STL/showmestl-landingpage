@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { DataTable, type Column } from '@/components/data-table'
 import { ConfirmDeleteButton } from '@/components/confirm-delete-button'
+import { TrendingSwitch } from '@/components/trending-switch'
 import { deleteEvent } from '@/lib/actions/events'
 import { EventDialog } from './event-dialog'
 
@@ -29,6 +30,7 @@ export type EventRow = {
   recurrence_rule: string | null
   recurrence_timezone: string | null
   category_ids: number[]
+  trending: boolean
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -115,6 +117,18 @@ export function EventsManager({
             </Badge>
           ) : null}
         </div>
+      ),
+    },
+    {
+      key: 'trending',
+      header: 'Trending',
+      className: 'w-20',
+      render: (e) => (
+        <TrendingSwitch
+          targetType="event"
+          targetId={e.id}
+          initialEnabled={e.trending}
+        />
       ),
     },
     {

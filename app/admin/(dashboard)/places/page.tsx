@@ -10,6 +10,7 @@ export default async function PlacesPage() {
     categoriesRes,
     dressCodesRes,
     assignmentsRes,
+    trendingRes,
   ] = await Promise.all([
     supabase
       .from('places_with_coords')
@@ -30,6 +31,11 @@ export default async function PlacesPage() {
       .from('place_category_assignments')
       .select('place_id, category_id, sort_order')
       .order('sort_order'),
+    supabase
+      .from('home_trending_items')
+      .select('place_id, enabled')
+      .not('place_id', 'is', null)
+      .eq('enabled', true),
   ])
 
   const assignmentsByPlace = new Map<number, number[]>()
@@ -38,6 +44,10 @@ export default async function PlacesPage() {
     list.push(row.category_id)
     assignmentsByPlace.set(row.place_id, list)
   }
+
+  const trendingPlaceIds = new Set(
+    (trendingRes.data ?? []).map((row) => row.place_id as number),
+  )
 
   const places = (placesRes.data ?? []).map((p) => ({
     id: p.id as number,
@@ -53,6 +63,7 @@ export default async function PlacesPage() {
     latitude: p.lat,
     longitude: p.lng,
     category_ids: assignmentsByPlace.get(p.id as number) ?? [],
+    trending: trendingPlaceIds.has(p.id as number),
   }))
 
   return (

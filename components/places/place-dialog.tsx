@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { CategoryPicker } from '@/components/category-picker'
+import { MultiSelectPicker } from '@/components/multi-select-picker'
 import { createPlace, updatePlace, type PlaceInput } from '@/lib/actions/places'
 import type { Place } from './places-manager'
 
@@ -194,8 +194,13 @@ export function PlaceDialog({
 
             <div className="space-y-2">
               <Label>Categories</Label>
-              <CategoryPicker
-                categories={categories}
+              <MultiSelectPicker
+                items={categories}
+                placeholder="Filter categories…"
+                emptyLabel="No matches."
+                helperText={(count) =>
+                  `${count} selected — first checked is the primary category.`
+                }
                 selected={form.category_ids}
                 onChange={(ids) =>
                   setForm((f) => ({ ...f, category_ids: ids }))

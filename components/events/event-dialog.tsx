@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { CategoryPicker } from '@/components/category-picker'
+import { MultiSelectPicker } from '@/components/multi-select-picker'
 import { createEvent, updateEvent, type EventInput } from '@/lib/actions/events'
 import type { EventRow } from './events-manager'
 
@@ -286,8 +286,13 @@ export function EventDialog({
 
             <div className="space-y-2">
               <Label>Categories</Label>
-              <CategoryPicker
-                categories={categories}
+              <MultiSelectPicker
+                items={categories}
+                placeholder="Filter categories…"
+                emptyLabel="No matches."
+                helperText={(count) =>
+                  `${count} selected — first checked is the primary category.`
+                }
                 selected={form.category_ids}
                 onChange={(ids) =>
                   setForm((f) => ({ ...f, category_ids: ids }))

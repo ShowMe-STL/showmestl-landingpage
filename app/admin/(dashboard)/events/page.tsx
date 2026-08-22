@@ -11,6 +11,7 @@ export default async function EventsPage() {
     dressCodesRes,
     assignmentsRes,
     placesRes,
+    trendingRes,
   ] = await Promise.all([
     supabase
       .from('events')
@@ -32,6 +33,11 @@ export default async function EventsPage() {
       .select('event_id, category_id, sort_order')
       .order('sort_order'),
     supabase.from('places').select('id, name').order('name'),
+    supabase
+      .from('home_trending_items')
+      .select('event_id, enabled')
+      .not('event_id', 'is', null)
+      .eq('enabled', true),
   ])
 
   const assignmentsByEvent = new Map<number, number[]>()
@@ -41,9 +47,14 @@ export default async function EventsPage() {
     assignmentsByEvent.set(row.event_id, list)
   }
 
+  const trendingEventIds = new Set(
+    (trendingRes.data ?? []).map((row) => row.event_id as number),
+  )
+
   const events = (eventsRes.data ?? []).map((e) => ({
     ...e,
     category_ids: assignmentsByEvent.get(e.id) ?? [],
+    trending: trendingEventIds.has(e.id),
   }))
 
   return (

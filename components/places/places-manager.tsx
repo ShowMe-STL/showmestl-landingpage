@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { DataTable, type Column } from '@/components/data-table'
 import { ConfirmDeleteButton } from '@/components/confirm-delete-button'
+import { TrendingSwitch } from '@/components/trending-switch'
 import { deletePlace } from '@/lib/actions/places'
 import { PlaceDialog } from './place-dialog'
 
@@ -26,6 +27,7 @@ export type Place = {
   latitude: number | null
   longitude: number | null
   category_ids: number[]
+  trending: boolean
 }
 
 export function PlacesManager({
@@ -125,6 +127,18 @@ export function PlacesManager({
             </Badge>
           ) : null}
         </div>
+      ),
+    },
+    {
+      key: 'trending',
+      header: 'Trending',
+      className: 'w-20',
+      render: (p) => (
+        <TrendingSwitch
+          targetType="place"
+          targetId={p.id}
+          initialEnabled={p.trending}
+        />
       ),
     },
     {
