@@ -109,10 +109,11 @@ export default async function OverviewPage() {
         <CardHeader>
           <CardTitle>Getting around</CardTitle>
           <CardDescription>
-            Places and events are curated content — the mobile app only reads
-            them, so anything you add, edit, or remove here shows up for
-            everyone immediately. Categories, neighborhoods, and dress codes are
-            the shared lookup lists used across both.
+            The numbers above represent our live metrics within the app. Use
+            this dashboard to edit, create, and delete places, events,
+            playlists, categories, neighborhoods, and dress codes. To set
+            something as trending within the app, just press the trending
+            toggle next to the item.
           </CardDescription>
         </CardHeader>
       </Card>

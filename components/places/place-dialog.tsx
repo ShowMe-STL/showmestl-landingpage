@@ -22,7 +22,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { MultiSelectPicker } from '@/components/multi-select-picker'
+import { SearchableSelect } from '@/components/searchable-select'
 import { createPlace, updatePlace, type PlaceInput } from '@/lib/actions/places'
+import { geocodeAddress } from '@/lib/actions/geocode'
 import type { Place } from './places-manager'
 
 const NONE = '__none__'
@@ -46,6 +48,7 @@ export function PlaceDialog({
 }) {
   const [form, setForm] = useState(() => toFormState(place))
   const [isPending, startTransition] = useTransition()
+  const [isGeocoding, startGeocode] = useTransition()
 
   // Reset local state whenever a different place (or "new") is opened.
   const key = place?.id ?? 'new'
@@ -53,6 +56,22 @@ export function PlaceDialog({
   if (lastKey !== key) {
     setLastKey(key)
     setForm(toFormState(place))
+  }
+
+  function handleGeocode() {
+    startGeocode(async () => {
+      const result = await geocodeAddress(form.address)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+      setForm((f) => ({
+        ...f,
+        latitude: String(result.latitude),
+        longitude: String(result.longitude),
+      }))
+      toast.success('Coordinates set from address.')
+    })
   }
 
   function handleSubmit(e: FormEvent) {
@@ -128,68 +147,71 @@ export function PlaceDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 rounded-lg border border-white/10 p-3">
               <div className="space-y-2">
                 <Label htmlFor="address">Address</Label>
-                <Input
-                  id="address"
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, address: e.target.value }))
-                  }
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="address"
+                    className="flex-1"
+                    value={form.address}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, address: e.target.value }))
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGeocode}
+                    disabled={isGeocoding || !form.address.trim()}
+                  >
+                    {isGeocoding ? 'Locating…' : 'Get coordinates'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Fills in latitude and longitude below from the address.
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="neighborhood">Neighborhood</Label>
-                <Select
-                  value={form.neighborhood_id || NONE}
-                  onValueChange={(v) =>
-                    setForm((f) => ({
-                      ...f,
-                      neighborhood_id: v === NONE || v === null ? '' : v,
-                    }))
-                  }
-                >
-                  <SelectTrigger id="neighborhood">
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>None</SelectItem>
-                    {neighborhoods.map((n) => (
-                      <SelectItem key={n.id} value={String(n.id)}>
-                        {n.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="latitude">Latitude</Label>
+                  <Input
+                    id="latitude"
+                    type="number"
+                    step="any"
+                    value={form.latitude}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, latitude: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="longitude">Longitude</Label>
+                  <Input
+                    id="longitude"
+                    type="number"
+                    step="any"
+                    value={form.longitude}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, longitude: e.target.value }))
+                    }
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="latitude">Latitude</Label>
-                <Input
-                  id="latitude"
-                  type="number"
-                  step="any"
-                  value={form.latitude}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, latitude: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="longitude">Longitude</Label>
-                <Input
-                  id="longitude"
-                  type="number"
-                  step="any"
-                  value={form.longitude}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, longitude: e.target.value }))
-                  }
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="neighborhood">Neighborhood</Label>
+              <SearchableSelect
+                id="neighborhood"
+                items={neighborhoods}
+                value={form.neighborhood_id}
+                onChange={(v) =>
+                  setForm((f) => ({ ...f, neighborhood_id: v }))
+                }
+                searchPlaceholder="Search neighborhoods…"
+              />
             </div>
 
             <div className="space-y-2">
