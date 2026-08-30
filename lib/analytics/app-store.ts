@@ -7,7 +7,14 @@ import { sign as cryptoSign } from 'node:crypto'
 // env vars (see .env.local.example); when any is missing the dashboard just
 // renders an "unconfigured" state instead of this data.
 //
+// The SALES/SUMMARY report is per *vendor account* — one daily file contains
+// rows for every app under the vendor number — so we filter rows to ShowMe
+// STL's Apple ID (from the App Store URL, id6760572115). Override with
+// APP_STORE_CONNECT_APP_APPLE_ID if the app ID ever changes.
+//
 // Sales report TSVs lag ~24-48h, so we only ask for days up to two days back.
+
+const APP_APPLE_ID = process.env.APP_STORE_CONNECT_APP_APPLE_ID ?? '6760572115'
 
 const TZ = 'America/Chicago'
 const dayFmt = new Intl.DateTimeFormat('en-CA', {
@@ -73,13 +80,16 @@ function parseDownloads(tsv: string): number {
   const header = lines[0].split('\t')
   const unitsIdx = header.indexOf('Units')
   const typeIdx = header.indexOf('Product Type Identifier')
+  // "Apple Identifier" is the numeric app ID column. If Apple ever renames it we
+  // fall back to counting every app rather than silently returning zero.
+  const appIdIdx = header.indexOf('Apple Identifier')
   if (unitsIdx === -1 || typeIdx === -1) return 0
   let total = 0
   for (let i = 1; i < lines.length; i += 1) {
     const cols = lines[i].split('\t')
-    if (FIRST_TIME.has(cols[typeIdx]?.trim())) {
-      total += Number(cols[unitsIdx]) || 0
-    }
+    if (!FIRST_TIME.has(cols[typeIdx]?.trim())) continue
+    if (appIdIdx !== -1 && cols[appIdIdx]?.trim() !== APP_APPLE_ID) continue
+    total += Number(cols[unitsIdx]) || 0
   }
   return total
 }

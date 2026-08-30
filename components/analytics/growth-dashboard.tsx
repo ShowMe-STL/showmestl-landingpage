@@ -202,7 +202,7 @@ export function GrowthDashboard({
                     : 'no report data in range'
                   : 'App Store Connect not configured'
               }
-              info="First-time App Store downloads (Apple's 'app units') in the selected range, from the App Store Connect Sales Reports API. Re-downloads and updates are excluded. Reports lag ~1–2 days."
+              info="First-time App Store downloads of ShowMe STL (Apple's 'app units') in the selected range, from the App Store Connect Sales Reports API. Filtered to this app only; re-downloads and updates are excluded. Reports lag ~1–2 days."
             />
             <Stat
               label="Download → signup"
