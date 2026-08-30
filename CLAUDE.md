@@ -213,6 +213,11 @@ view (Signups · Activation · Active users · Retention):
   - "Activated" = user ever did ≥1 meaningful action (AI message, check-in,
     check-in comment, playlist created, playlist saved). No "playlist comments"
     metric — there's no such table.
+  - `SIGNUP_TIMELINE_START` ('2026-08-09') clips the migration-day import
+    (~370 accounts stamped 2026-08-08) off the signups chart; those users
+    still count toward the cumulative/all-time totals.
+  - Every stat tile and panel takes an `info` prop rendered as a hover/focus
+    `ⓘ` tooltip (`InfoDot` in `growth-dashboard.tsx`) explaining the metric.
   - DAU/WAU/MAU active = performed a meaningful action that day. No app-open
     telemetry exists.
   - Retention headline Dn = still active on/after day n; cohort triangle =

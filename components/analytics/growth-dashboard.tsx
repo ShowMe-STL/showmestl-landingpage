@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Info } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { LineChart, BarChart } from '@/components/analytics/charts'
@@ -19,19 +20,44 @@ const RANGES: { key: RangeKey; label: string }[] = [
 
 const pct = (n: number) => `${(n * 100).toFixed(n < 0.1 ? 1 : 0)}%`
 
+function InfoDot({ text }: { text: string }) {
+  return (
+    <span className="group/info relative inline-flex shrink-0">
+      <button
+        type="button"
+        aria-label={text}
+        className="text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
+      >
+        <Info className="h-3.5 w-3.5" />
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 hidden w-56 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-relaxed font-normal text-muted-foreground shadow-xl group-hover/info:block group-focus-within/info:block"
+      >
+        {text}
+      </span>
+    </span>
+  )
+}
+
 function Stat({
   label,
   value,
   sub,
+  info,
 }: {
   label: string
   value: string
   sub?: string
+  info?: string
 }) {
   return (
     <Card className="border-white/10 bg-card">
       <CardHeader className="pb-1">
-        <CardDescription>{label}</CardDescription>
+        <CardDescription className="flex items-center gap-1.5">
+          {label}
+          {info && <InfoDot text={info} />}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <CardTitle className="text-2xl tabular-nums">{value}</CardTitle>
@@ -44,16 +70,21 @@ function Stat({
 function Panel({
   title,
   hint,
+  info,
   children,
 }: {
   title: string
   hint?: string
+  info?: string
   children: React.ReactNode
 }) {
   return (
     <Card className="border-white/10 bg-card">
       <CardHeader>
-        <CardTitle className="text-base">{title}</CardTitle>
+        <CardTitle className="flex items-center gap-1.5 text-base">
+          {title}
+          {info && <InfoDot text={info} />}
+        </CardTitle>
         {hint && <CardDescription>{hint}</CardDescription>}
       </CardHeader>
       <CardContent>{children}</CardContent>
@@ -155,6 +186,7 @@ export function GrowthDashboard({
               label="New signups"
               value={signups.reduce((s, d) => s + d.count, 0).toLocaleString()}
               sub={`in the selected range · ${analytics.totals.users.toLocaleString()} all-time`}
+              info="Accounts created (a profile row) within the selected date range. The all-time number includes ~370 existing accounts imported in the 2026-08-08 migration; the range count starts the day after so it isn't skewed by that."
             />
             <Stat
               label="Downloads"
@@ -170,6 +202,7 @@ export function GrowthDashboard({
                     : 'no report data in range'
                   : 'App Store Connect not configured'
               }
+              info="First-time App Store downloads (Apple's 'app units') in the selected range, from the App Store Connect Sales Reports API. Re-downloads and updates are excluded. Reports lag ~1–2 days."
             />
             <Stat
               label="Download → signup"
@@ -179,15 +212,21 @@ export function GrowthDashboard({
                   ? `${signupsInDownloadWindow.toLocaleString()} signups / ${downloadsTotal.toLocaleString()} downloads`
                   : 'needs App Store data'
               }
+              info="Signups divided by first-time downloads over the same days — roughly, the share of people who install the app and then create an account. Capped at 100%."
             />
             <Stat
               label="Activated"
               value={pct(analytics.totals.activationRate)}
               sub={`${analytics.totals.activatedUsers.toLocaleString()} of ${analytics.totals.users.toLocaleString()} users ever did a key action`}
+              info="Share of all accounts that have ever completed at least one key action: sent an AI message, created a check-in, commented on a check-in, created a playlist, or saved a playlist."
             />
           </div>
 
-          <Panel title="New signups per day" hint="Accounts created (profile row).">
+          <Panel
+            title="New signups per day"
+            hint="Accounts created (profile row)."
+            info="One point per day = accounts created that day. The timeline starts 2026-08-09 — the 2026-08-08 migration import (~370 accounts) is left off so it doesn't read as a real spike."
+          >
             <LineChart
               data={signups}
               series={[
@@ -196,7 +235,10 @@ export function GrowthDashboard({
             />
           </Panel>
 
-          <Panel title="Cumulative users">
+          <Panel
+            title="Cumulative users"
+            info="Running total of all accounts. Starts from the post-migration baseline (~370) on 2026-08-09 and climbs with each day's real signups."
+          >
             <LineChart
               data={signups}
               series={[
@@ -215,6 +257,7 @@ export function GrowthDashboard({
               <Panel
                 title="Downloads vs signups"
                 hint="App Store first-time downloads against accounts created, same day."
+                info="Two lines: daily first-time App Store downloads and daily signups. The gap between them is the drop-off between installing and signing up."
               >
                 <LineChart
                   data={downloadVsSignup}
@@ -253,6 +296,7 @@ export function GrowthDashboard({
               label="Activation rate"
               value={pct(analytics.totals.activationRate)}
               sub="users who ever did ≥1 key action"
+              info="Share of all accounts that have ever done at least one key action (AI message, check-in, check-in comment, playlist created, or playlist saved). Same number as 'Activated' on the Signups tab."
             />
             {analytics.activation.firstWeek.buckets
               .filter((b) => b.bucket !== '0')
@@ -268,6 +312,7 @@ export function GrowthDashboard({
                     label="Activated in first 7 days"
                     value={el ? pct(activatedFirstWeek / el) : '—'}
                     sub={`${activatedFirstWeek} of ${el} users with a full first week`}
+                    info="Of users whose first 7 days have fully elapsed, the share that did ≥1 key action within those 7 days. Migration-imported users are measured from 2026-08-08, so real early engagement by them is undercounted here."
                   />
                 )
               })}
@@ -286,12 +331,14 @@ export function GrowthDashboard({
                 analytics.activation.firstWeek.buckets.find((b) => b.bucket === '0')
                   ?.users ?? 0
               } users did nothing in week 1`}
+              info="Of users with a full first week elapsed, the share that completed zero key actions in their first 7 days. This is the main early-funnel drop-off."
             />
           </div>
 
           <Panel
             title="Key actions — users reached"
             hint="Distinct users who performed each action within their first 7 days (bar) — hover for all-time."
+            info="For each action type, the number of distinct users who did it at least once in their first 7 days. Hover a bar to also see the all-time count. Shows which actions new users actually reach."
           >
             <BarChart
               data={analytics.activation.byAction.map((a) => ({
@@ -305,6 +352,7 @@ export function GrowthDashboard({
           <Panel
             title="Meaningful actions in first 7 days"
             hint="How many key actions each new user completed in their first week (users with a full week elapsed)."
+            info="Users bucketed by how many key actions (any type, counting repeats) they completed in their first 7 days. The '0 actions' bar is the group that never engaged."
           >
             <BarChart
               data={analytics.activation.firstWeek.buckets.map((b) => ({
@@ -319,6 +367,7 @@ export function GrowthDashboard({
           <Panel
             title="Activation rate by signup week"
             hint="Share of each weekly signup cohort that did ≥1 key action within 7 days."
+            info="Each point is one weekly signup cohort: the share of that week's new users who did ≥1 key action within 7 days of signing up. Only cohorts old enough to have a full 7-day window for every member are shown. Watch the trend, not any single week."
           >
             <LineChart
               percent
@@ -336,19 +385,36 @@ export function GrowthDashboard({
         {/* ---- Active users --------------------------------------- */}
         <TabsContent value="active" className="space-y-4 pt-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="DAU" value={analytics.active.current.dau.toLocaleString()} sub="today, Central" />
-            <Stat label="WAU" value={analytics.active.current.wau.toLocaleString()} sub="last 7 days" />
-            <Stat label="MAU" value={analytics.active.current.mau.toLocaleString()} sub="last 30 days" />
+            <Stat
+              label="DAU"
+              value={analytics.active.current.dau.toLocaleString()}
+              sub="today, Central"
+              info="Distinct users who did a key action so far today (America/Chicago). Today is still in progress, so this climbs through the day."
+            />
+            <Stat
+              label="WAU"
+              value={analytics.active.current.wau.toLocaleString()}
+              sub="last 7 days"
+              info="Distinct users who did a key action at least once in the last 7 days (including today)."
+            />
+            <Stat
+              label="MAU"
+              value={analytics.active.current.mau.toLocaleString()}
+              sub="last 30 days"
+              info="Distinct users who did a key action at least once in the last 30 days."
+            />
             <Stat
               label="DAU / WAU"
               value={pct(analytics.active.current.ratio)}
               sub="stickiness"
+              info="Today's DAU divided by WAU — the share of weekly-active users who show up on an average day. Higher means people come back more often; ~20%+ is healthy for a consumer social app."
             />
           </div>
 
           <Panel
             title="Daily active users"
             hint="Active = performed a key action that day. New = signed up the same day."
+            info="Distinct active users per day. 'New' is the slice that signed up that same day; the rest are returning. There's no app-open telemetry, so 'active' always means a key action, not just launching the app."
           >
             <LineChart
               data={activeDaily}
@@ -359,7 +425,11 @@ export function GrowthDashboard({
             />
           </Panel>
 
-          <Panel title="Weekly active users" hint="Rolling 7-day distinct active users.">
+          <Panel
+            title="Weekly active users"
+            hint="Rolling 7-day distinct active users."
+            info="For each day, the number of distinct users active in the trailing 7-day window ending that day. Smoother than DAU; the trend is what matters."
+          >
             <LineChart
               data={wau}
               series={[
@@ -368,7 +438,10 @@ export function GrowthDashboard({
             />
           </Panel>
 
-          <Panel title="Stickiness (DAU / WAU)">
+          <Panel
+            title="Stickiness (DAU / WAU)"
+            info="DAU ÷ WAU plotted per day. Rising = the same weekly users are coming back more often; falling = growth is coming from one-off visits."
+          >
             <LineChart
               percent
               data={stickiness}
@@ -386,6 +459,11 @@ export function GrowthDashboard({
                 label={`D${h.day} retention`}
                 value={h.eligible ? pct(h.rate) : '—'}
                 sub={`${h.retained} of ${h.eligible} users active on/after day ${h.day}`}
+                info={`Of users who signed up at least ${h.day} day${
+                  h.day === 1 ? '' : 's'
+                } ago, the share that did a key action on day ${h.day} or later — i.e. were still around ${h.day} day${
+                  h.day === 1 ? '' : 's'
+                } in. Shows "—" until enough accounts are that old.`}
               />
             ))}
           </div>
@@ -393,6 +471,7 @@ export function GrowthDashboard({
           <Panel
             title="Weekly cohort retention"
             hint="Rows = signup week. Wn = share of that cohort active during the nth week after signing up."
+            info="Each row is a signup-week cohort. Column Wn = the share of that cohort that did a key action during the nth week after signing up (W0 = signup week). Darker = higher. Blank cells are weeks that haven't happened yet. Read down a column to see if retention is improving for newer cohorts."
           >
             <CohortTriangle
               cohorts={analytics.retention.cohorts}

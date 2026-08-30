@@ -32,6 +32,12 @@ export const ACTION_LABELS: Record<ActionType, string> = {
 
 const ACTION_TYPES = Object.keys(ACTION_LABELS) as ActionType[]
 
+// A data migration on 2026-08-08 imported ~370 existing accounts, all stamped
+// with that day's created_at — which would render as one giant fake signup
+// spike. Start the signup timeline the day after; those users are still counted
+// in the cumulative total (just folded into the starting baseline).
+const SIGNUP_TIMELINE_START = '2026-08-09'
+
 export type GrowthAnalytics = {
   generatedAt: string
   today: string
@@ -188,8 +194,15 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     signupCounts.set(day, (signupCounts.get(day) ?? 0) + 1)
   }
   const firstDay = profileRows.length ? dayKey(profileRows[0].created_at) : today
+  const timelineStart =
+    firstDay < SIGNUP_TIMELINE_START && SIGNUP_TIMELINE_START <= today
+      ? SIGNUP_TIMELINE_START
+      : firstDay
   let cumulative = 0
-  const signups = eachDay(firstDay, today).map((day) => {
+  for (const day of signupDay.values()) {
+    if (day < timelineStart) cumulative += 1
+  }
+  const signups = eachDay(timelineStart, today).map((day) => {
     const count = signupCounts.get(day) ?? 0
     cumulative += count
     return { day, count, cumulative }
