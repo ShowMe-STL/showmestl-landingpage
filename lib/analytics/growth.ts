@@ -41,6 +41,14 @@ const SIGNUP_TIMELINE_START = '2026-08-09'
 export type GrowthAnalytics = {
   generatedAt: string
   today: string
+  coverage: {
+    /** Earliest day any tracked action occurred. */
+    activityFrom: string
+    /** Day the signups chart starts (post-migration). */
+    signupsFrom: string
+    /** created_at of the very first account (the migration import day). */
+    firstAccount: string
+  }
   totals: {
     users: number
     activatedUsers: number
@@ -378,6 +386,11 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
   return {
     generatedAt: new Date().toISOString(),
     today,
+    coverage: {
+      activityFrom: activeFrom,
+      signupsFrom: timelineStart,
+      firstAccount: firstDay,
+    },
     totals: {
       users: totalUsers,
       activatedUsers,

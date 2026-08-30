@@ -20,6 +20,21 @@ const RANGES: { key: RangeKey; label: string }[] = [
 
 const pct = (n: number) => `${(n * 100).toFixed(n < 0.1 ? 1 : 0)}%`
 
+const fmtDay = (key: string) =>
+  new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'America/Chicago',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
+const fmtMonth = (key: string) =>
+  new Date(`${key.slice(0, 7)}-15T12:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'America/Chicago',
+    month: 'short',
+    year: 'numeric',
+  })
+
 function InfoDot({ text }: { text: string }) {
   return (
     <span className="group/info relative inline-flex shrink-0">
@@ -140,7 +155,7 @@ export function GrowthDashboard({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">Growth</h2>
           <p className="text-xs text-muted-foreground">
             Where people enter the funnel and where they drop off. Updated{' '}
@@ -150,6 +165,26 @@ export function GrowthDashboard({
               timeStyle: 'short',
             })}{' '}
             · times in Central.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Data range: in-app activity since{' '}
+            <span className="text-foreground">
+              {fmtDay(analytics.coverage.activityFrom)}
+            </span>
+            ; signups charted from{' '}
+            <span className="text-foreground">
+              {fmtDay(analytics.coverage.signupsFrom)}
+            </span>{' '}
+            (
+            {(
+              (analytics.signups[0]?.cumulative ?? 0) -
+              (analytics.signups[0]?.count ?? 0)
+            ).toLocaleString()}{' '}
+            accounts imported {fmtDay(analytics.coverage.firstAccount)} in a
+            migration are folded into the cumulative baseline).
+            {appStore.configured && appStore.coverageStart
+              ? ` App Store downloads since ${fmtMonth(appStore.coverageStart)}.`
+              : ''}
           </p>
         </div>
         <div className="flex gap-1 rounded-lg bg-muted p-[3px]">

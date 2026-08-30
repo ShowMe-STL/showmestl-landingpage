@@ -228,7 +228,10 @@ view (Signups · Activation · Active users · Retention):
   returns `{ configured: false }` when absent and the UI hides those cards.
   Daily reports lag ~1–2 days; each day's fetch is cached 12h. The SALES report
   is per *vendor account*, so rows are filtered to ShowMe STL's Apple ID
-  (`6760572115`, overridable via `APP_STORE_CONNECT_APP_APPLE_ID`).
+  (`6760572115`, overridable via `APP_STORE_CONNECT_APP_APPLE_ID`). All-time
+  downloads = MONTHLY reports for every complete month (from
+  `APP_STORE_CONNECT_FIRST_MONTH`, default 15 months back) + DAILY for the
+  current partial month; shown as a top-of-Overview count card.
 - **`components/analytics/`** — inline-SVG charts (no charting dep), using the
   `--chart-1..5` tokens. `charts.tsx` (line/area + bar, hover tooltips),
   `cohort-triangle.tsx`, `growth-dashboard.tsx` (client; 7/30/90/All range
