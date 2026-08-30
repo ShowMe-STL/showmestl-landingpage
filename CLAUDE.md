@@ -193,6 +193,40 @@ In `next.config.ts`:
 
 `allowedDevOrigins` is required for HMR to work when accessing the dev server from a phone on the same WiFi. Without it, `pnpm dev -H 0.0.0.0` serves HTML but JS never hydrates on the phone (the HMR websocket fails). **If you change networks, update the IP in this file.**
 
+## Admin dashboard (`/admin`)
+
+Moderator-gated (`requireModerator()` in `lib/auth.ts`, checks the `moderators`
+table). CRUD pages for places/events/playlists/etc. live under
+`app/admin/(dashboard)/`. All server reads use the service-role client
+(`lib/supabase/admin.ts`), which bypasses RLS.
+
+The Overview page (`app/admin/(dashboard)/page.tsx`, `dynamic = 'force-dynamic'`)
+renders the live count cards **and** `<GrowthDashboard />` — a YC-style funnel
+view (Signups · Activation · Active users · Retention):
+
+- **`lib/analytics/growth.ts`** — `getGrowthAnalytics()`. Paginates the raw event
+  tables (`profiles`, `check_ins`, `check_in_comments`, `playlists` w/ non-null
+  `owner_id`, `saved_playlists`, `showme_ai_messages` joined to its chat) and
+  computes everything in process. Days bucketed in `America/Chicago`. **Day keys
+  are anchored at noon UTC** — anchoring at midnight makes `Intl` format them
+  back a day and `addDays` loops forever (this OOM'd the build once).
+  - "Activated" = user ever did ≥1 meaningful action (AI message, check-in,
+    check-in comment, playlist created, playlist saved). No "playlist comments"
+    metric — there's no such table.
+  - DAU/WAU/MAU active = performed a meaningful action that day. No app-open
+    telemetry exists.
+  - Retention headline Dn = still active on/after day n; cohort triangle =
+    weekly signup cohorts × week-n active.
+- **`lib/analytics/app-store.ts`** — `getAppStoreDownloads()`. App Store Connect
+  Sales Reports API (ES256 JWT signed with `node:crypto`, no dep; gunzip + TSV
+  parse). Needs the 4 `APP_STORE_CONNECT_*` env vars (see `.env.local.example`);
+  returns `{ configured: false }` when absent and the UI hides those cards.
+  Daily reports lag ~1–2 days; each day's fetch is cached 12h.
+- **`components/analytics/`** — inline-SVG charts (no charting dep), using the
+  `--chart-1..5` tokens. `charts.tsx` (line/area + bar, hover tooltips),
+  `cohort-triangle.tsx`, `growth-dashboard.tsx` (client; 7/30/90/All range
+  toggle + tabs).
+
 ## Deployment
 
 1. `pnpm build` produces a standalone Node server bundle in `.next/standalone/`

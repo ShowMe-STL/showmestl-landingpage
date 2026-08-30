@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { MapPin, CalendarDays, ListMusic, Users, Tags } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getGrowthAnalytics } from '@/lib/analytics/growth'
+import { getAppStoreDownloads, type AppStoreDownloads } from '@/lib/analytics/app-store'
+import { GrowthDashboard } from '@/components/analytics/growth-dashboard'
+import { Separator } from '@/components/ui/separator'
 import {
   Card,
   CardContent,
@@ -8,6 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+
+// Live dashboard — always rendered per request, never prerendered at build.
+export const dynamic = 'force-dynamic'
 
 async function getCounts() {
   const supabase = createAdminClient()
@@ -41,8 +48,24 @@ async function getCounts() {
   }
 }
 
+async function getAppStoreSafely(): Promise<AppStoreDownloads> {
+  try {
+    return await getAppStoreDownloads(30)
+  } catch (err) {
+    return {
+      configured: true,
+      error: err instanceof Error ? err.message : 'App Store Connect request failed.',
+      daily: [],
+    }
+  }
+}
+
 export default async function OverviewPage() {
-  const counts = await getCounts()
+  const [counts, analytics, appStore] = await Promise.all([
+    getCounts(),
+    getGrowthAnalytics(),
+    getAppStoreSafely(),
+  ])
 
   const stats = [
     {
@@ -117,6 +140,10 @@ export default async function OverviewPage() {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      <Separator className="bg-white/10" />
+
+      <GrowthDashboard analytics={analytics} appStore={appStore} />
     </div>
   )
 }
