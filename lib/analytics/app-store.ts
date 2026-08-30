@@ -18,9 +18,21 @@ const dayFmt = new Intl.DateTimeFormat('en-CA', {
 })
 
 // Product Type Identifiers that count as a first-time download (an "app unit"),
-// per Apple's report field reference. Redownloads (3, 3F...) and updates (7,
-// 7F...) are deliberately excluded.
-const FIRST_TIME = new Set(['1', '1F', '1T', '1E', '1EP', '1EU', 'F1', '1B'])
+// per Apple's Product Type Identifiers reference. Re-downloads (3, 3F) and
+// updates (7, 7F, 7T, F7) are deliberately excluded. For a free consumer iOS
+// app in practice only "1F" ever shows up; the rest are here for completeness
+// (iPad-only "1T", legacy "1", Mac "F1", custom/B2B apps, app bundles).
+const FIRST_TIME = new Set([
+  '1',
+  '1F',
+  '1T',
+  '1E',
+  '1EP',
+  '1EU',
+  '1-B',
+  'F1',
+  'F1-B',
+])
 
 export type AppStoreDownloads = {
   configured: boolean
