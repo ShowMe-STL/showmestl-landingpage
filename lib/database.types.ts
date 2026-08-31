@@ -391,6 +391,74 @@ export type Database = {
           },
         ]
       }
+      crowd_members: {
+        Row: {
+          created_at: string
+          crowd_id: number
+          member_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          crowd_id: number
+          member_id: string
+          sort_order: number
+        }
+        Update: {
+          created_at?: string
+          crowd_id?: number
+          member_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crowd_members_crowd_id_fkey"
+            columns: ["crowd_id"]
+            isOneToOne: false
+            referencedRelation: "crowds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crowd_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crowds: {
+        Row: {
+          created_at: string
+          id: number
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crowds_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dress_codes: {
         Row: {
           id: number

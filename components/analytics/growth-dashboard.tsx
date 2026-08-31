@@ -31,7 +31,7 @@ const usd = (n: number, digits = 2) =>
 // Kept in sync with ACTION_LABELS in lib/analytics/growth.ts (can't import that
 // value here — it's a server-only module).
 const KEY_ACTIONS =
-  'sending an AI message, checking into a place or an event, commenting on a check-in, liking a place, creating or saving a playlist, or adding a friend'
+  'sending an AI message, checking into a place or an event, commenting on a check-in, liking a place, creating or saving a playlist, adding a friend, or creating a crowd'
 
 const fmtDay = (key: string) =>
   new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', {

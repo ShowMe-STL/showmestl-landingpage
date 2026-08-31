@@ -22,6 +22,7 @@ export type ActionType =
   | 'playlist_created'
   | 'playlist_saved'
   | 'friend_added'
+  | 'crowd_created'
 
 export const ACTION_LABELS: Record<ActionType, string> = {
   ai_message: 'AI messages',
@@ -32,6 +33,7 @@ export const ACTION_LABELS: Record<ActionType, string> = {
   playlist_created: 'Playlists created',
   playlist_saved: 'Playlists saved',
   friend_added: 'Friends added',
+  crowd_created: 'Crowds created',
 }
 
 const ACTION_TYPES = Object.keys(ACTION_LABELS) as ActionType[]
@@ -112,6 +114,7 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     playlistRows,
     savedRows,
     friendshipRows,
+    crowdRows,
     aiRows,
   ] = await Promise.all([
     fetchAll<{ id: string; created_at: string }>((f, t) =>
@@ -153,6 +156,13 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
         .order('created_at')
         .range(f, t),
     ),
+    fetchAll<{ owner_id: string; created_at: string }>((f, t) =>
+      supabase
+        .from('crowds')
+        .select('owner_id, created_at')
+        .order('created_at')
+        .range(f, t),
+    ),
     // showme_ai_messages has no user_id of its own — it hangs off the chat.
     fetchAll<{ created_at: string; chat: { user_id: string } | { user_id: string }[] | null }>(
       (f, t) =>
@@ -182,6 +192,7 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
   for (const r of likedPlaceRows) pushEv(r.user_id, r.created_at, 'liked_place')
   for (const r of playlistRows) pushEv(r.owner_id, r.created_at, 'playlist_created')
   for (const r of savedRows) pushEv(r.user_id, r.created_at, 'playlist_saved')
+  for (const r of crowdRows) pushEv(r.owner_id, r.created_at, 'crowd_created')
   for (const r of friendshipRows) {
     // One friendship row = both people gained a friend at that moment.
     pushEv(r.user_id_a, r.created_at, 'friend_added')
