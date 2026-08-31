@@ -219,8 +219,11 @@ view (Signups · Activation · Active users · Retention):
   - "Activated" = user ever did ≥1 key action. Adding actions here raises the
     activation rate — keep `KEY_ACTIONS` copy in `growth-dashboard.tsx` in sync.
   - `SIGNUP_TIMELINE_START` ('2026-08-09') clips the migration-day import
-    (~370 accounts stamped 2026-08-08) off the signups chart; those users
-    still count toward the cumulative/all-time totals.
+    (~355 accounts stamped 2026-08-08) off the signups chart; those users
+    still count toward the cumulative/all-time totals. First-week activation
+    (`firstWeek` buckets, "Activated/Never activated in first 7 days") and the
+    weekly activation-rate trend **only** count accounts that signed up on/after
+    this date — migration accounts have no real onboarding window.
   - Every stat tile and panel takes an `info` prop rendered as a hover/focus
     `ⓘ` tooltip (`InfoDot` in `growth-dashboard.tsx`) explaining the metric.
   - DAU/WAU/MAU active = performed a meaningful action that day. No app-open

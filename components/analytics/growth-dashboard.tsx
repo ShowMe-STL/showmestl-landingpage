@@ -376,8 +376,15 @@ export function GrowthDashboard({
                     key={b.bucket}
                     label="Activated in first 7 days"
                     value={el ? pct(activatedFirstWeek / el) : '—'}
-                    sub={`${activatedFirstWeek} of ${el} users with a full first week`}
-                    info="Of users whose first 7 days have fully elapsed, the share that did ≥1 key action within those 7 days. Migration-imported users are measured from 2026-08-08, so real early engagement by them is undercounted here."
+                    sub={`${activatedFirstWeek} of ${el} new accounts (signed up since ${fmtDay(
+                      analytics.activation.firstWeek.since,
+                    )})`}
+                    info={`Of accounts that signed up on/after ${fmtDay(
+                      analytics.activation.firstWeek.since,
+                    )} and have had a full 7 days since, the share that did ≥1 key action within those first 7 days. The ~${(
+                      (analytics.signups[0]?.cumulative ?? 0) -
+                      (analytics.signups[0]?.count ?? 0)
+                    ).toLocaleString()} accounts imported in the migration are excluded — their real onboarding window wasn't tracked.`}
                   />
                 )
               })}
@@ -395,8 +402,10 @@ export function GrowthDashboard({
               sub={`${
                 analytics.activation.firstWeek.buckets.find((b) => b.bucket === '0')
                   ?.users ?? 0
-              } users did nothing in week 1`}
-              info="Of users with a full first week elapsed, the share that completed zero key actions in their first 7 days. This is the main early-funnel drop-off."
+              } of ${analytics.activation.firstWeek.eligible} new accounts did nothing in week 1`}
+              info={`Of accounts that signed up on/after ${fmtDay(
+                analytics.activation.firstWeek.since,
+              )} and have had a full 7 days since, the share that completed zero key actions in their first 7 days. This is the main early-funnel drop-off. Migration-imported accounts are excluded.`}
             />
           </div>
 
@@ -417,14 +426,18 @@ export function GrowthDashboard({
 
           <Panel
             title="Meaningful actions in first 7 days"
-            hint="How many key actions each new user completed in their first week (users with a full week elapsed)."
-            info="Users bucketed by how many key actions (any type, counting repeats) they completed in their first 7 days. The '0 actions' bar is the group that never engaged."
+            hint={`New accounts (signed up since ${fmtDay(
+              analytics.activation.firstWeek.since,
+            )}) bucketed by how many key actions they did in week 1.`}
+            info={`Accounts that signed up on/after ${fmtDay(
+              analytics.activation.firstWeek.since,
+            )} with a full week elapsed, bucketed by how many key actions (any type, counting repeats) they completed in their first 7 days. The '0 actions' bar is the group that never engaged. Migration-imported accounts are excluded — their first week wasn't tracked.`}
           >
             <BarChart
               data={analytics.activation.firstWeek.buckets.map((b) => ({
                 label: `${b.bucket} action${b.bucket === '1' ? '' : 's'}`,
                 value: b.users,
-                sub: `${b.users} users`,
+                sub: `${b.users} accounts`,
               }))}
               color="var(--chart-4)"
             />
@@ -432,8 +445,8 @@ export function GrowthDashboard({
 
           <Panel
             title="Activation rate by signup week"
-            hint="Share of each weekly signup cohort that did ≥1 key action within 7 days."
-            info="Each point is one weekly signup cohort: the share of that week's new users who did ≥1 key action within 7 days of signing up. Only cohorts old enough to have a full 7-day window for every member are shown. Watch the trend, not any single week."
+            hint="Share of each weekly signup cohort that did ≥1 key action within 7 days (post-migration cohorts only)."
+            info="Each point is one weekly signup cohort: the share of that week's new accounts that did ≥1 key action within 7 days of signing up. Only post-migration weeks with a full 7-day window for every member are shown. Watch the trend, not any single week."
           >
             <LineChart
               percent

@@ -70,6 +70,8 @@ export type GrowthAnalytics = {
       events: number
     }[]
     firstWeek: {
+      /** Only counts users who signed up on/after this day (post-migration). */
+      since: string
       eligible: number
       buckets: { bucket: '0' | '1' | '2' | '3+'; users: number }[]
     }
@@ -293,8 +295,11 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     }
   }).sort((a, b) => b.users - a.users)
 
+  // First-week activation is only meaningful for accounts whose real first week
+  // we actually tracked — i.e. those that signed up after the migration import.
+  // Migration accounts are stamped 2026-08-08 with no genuine onboarding window.
   const firstWeekEligibleUsers = [...signupDay.entries()].filter(
-    ([, day]) => daysBetween(day, today) >= 7,
+    ([, day]) => day >= SIGNUP_TIMELINE_START && daysBetween(day, today) >= 7,
   )
   const bucketCounts = { '0': 0, '1': 0, '2': 0, '3+': 0 }
   for (const [userId] of firstWeekEligibleUsers) {
@@ -315,7 +320,13 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     weekCohorts.set(wk, arr)
   }
   const weeklyTrend = [...weekCohorts.entries()]
-    .filter(([wk]) => daysBetween(addDays(wk, 6), today) >= 7)
+    // Only weeks that start on/after the migration cutoff — the migration import
+    // shares a calendar week with the cutoff, so anything earlier is dominated
+    // by untracked v1 accounts.
+    .filter(
+      ([wk]) =>
+        wk >= SIGNUP_TIMELINE_START && daysBetween(addDays(wk, 6), today) >= 7,
+    )
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([week, userIds]) => {
       const activated = userIds.filter(
@@ -442,6 +453,7 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     activation: {
       byAction,
       firstWeek: {
+        since: SIGNUP_TIMELINE_START,
         eligible: firstWeekEligibleUsers.length,
         buckets: [
           { bucket: '0', users: bucketCounts['0'] },
