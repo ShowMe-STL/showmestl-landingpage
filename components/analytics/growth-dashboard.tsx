@@ -8,6 +8,8 @@ import { LineChart, BarChart, HBarChart } from '@/components/analytics/charts'
 import { CohortTriangle } from '@/components/analytics/cohort-triangle'
 import type { GrowthAnalytics } from '@/lib/analytics/growth'
 import type { AppStoreDownloads } from '@/lib/analytics/app-store'
+import type { AiAnalytics } from '@/lib/analytics/ai'
+import type { OpenAiSpend } from '@/lib/analytics/openai'
 
 type RangeKey = '7' | '30' | '90' | 'all'
 
@@ -19,6 +21,12 @@ const RANGES: { key: RangeKey; label: string }[] = [
 ]
 
 const pct = (n: number) => `${(n * 100).toFixed(n < 0.1 ? 1 : 0)}%`
+
+const usd = (n: number, digits = 2) =>
+  `$${n.toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}`
 
 // Kept in sync with ACTION_LABELS in lib/analytics/growth.ts (can't import that
 // value here — it's a server-only module).
@@ -140,9 +148,13 @@ function Panel({
 export function GrowthDashboard({
   analytics,
   appStore,
+  ai,
+  openai,
 }: {
   analytics: GrowthAnalytics
   appStore: AppStoreDownloads
+  ai: AiAnalytics | null
+  openai: OpenAiSpend
 }) {
   const [range, setRange] = useState<RangeKey>('30')
 
@@ -242,6 +254,7 @@ export function GrowthDashboard({
           <TabsTrigger value="activation">Activation</TabsTrigger>
           <TabsTrigger value="active">Active users</TabsTrigger>
           <TabsTrigger value="retention">Retention</TabsTrigger>
+          <TabsTrigger value="ai">AI</TabsTrigger>
         </TabsList>
 
         {/* ---- Signups ------------------------------------------------ */}
@@ -415,6 +428,28 @@ export function GrowthDashboard({
             />
           </div>
 
+          <p className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">
+              Why the &ldquo;first 7 days&rdquo; count is smaller than new
+              signups:
+            </span>{' '}
+            it only includes accounts whose first week has fully elapsed —{' '}
+            {analytics.activation.firstWeek.eligible} that signed up{' '}
+            {fmtDay(analytics.activation.firstWeek.since)} –{' '}
+            {fmtDay(analytics.activation.firstWeek.through)}. You can&rsquo;t ask
+            &ldquo;did they act within 7 days?&rdquo; about someone who joined 3
+            days ago, so the{' '}
+            {analytics.activation.firstWeek.inProgress} accounts still inside
+            their first week are held out and added as their windows close. The
+            ~
+            {(
+              (analytics.signups[0]?.cumulative ?? 0) -
+              (analytics.signups[0]?.count ?? 0)
+            ).toLocaleString()}{' '}
+            migration-imported accounts are excluded entirely — their real
+            onboarding was never tracked.
+          </p>
+
           <Panel
             title="Key actions — users reached"
             hint="Each bar = how many different people have ever done that action. Hover a bar for the first-week and lifetime breakdown."
@@ -567,6 +602,197 @@ export function GrowthDashboard({
               weekOffsets={analytics.retention.weekOffsets}
             />
           </Panel>
+        </TabsContent>
+
+        {/* ---- AI --------------------------------------------- */}
+        <TabsContent value="ai" className="space-y-4 pt-4">
+          {!ai ? (
+            <Panel title="ShowMe AI">
+              <p className="text-sm text-muted-foreground">
+                Couldn&rsquo;t load AI usage data right now.
+              </p>
+            </Panel>
+          ) : (
+            (() => {
+              const aiDaily = inRange(ai.daily)
+              const spendDaily = openai.daily.filter((d) => d.day >= cutoff)
+              const msgsInWindow = ai.daily
+                .slice(-openai.windowDays)
+                .reduce((s, d) => s + d.messages, 0)
+              const costPerMsg =
+                openai.totalCost !== null && msgsInWindow > 0
+                  ? openai.totalCost / msgsInWindow
+                  : null
+              const costPerUser =
+                openai.totalCost !== null && ai.users.activeLast30 > 0
+                  ? openai.totalCost / ai.users.activeLast30
+                  : null
+
+              return (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Stat
+                      label="AI users"
+                      value={ai.users.total.toLocaleString()}
+                      sub={`${pct(ai.users.shareOfAllUsers)} of all accounts · ${ai.users.activeLast30.toLocaleString()} active in 30d`}
+                      info="Distinct accounts that have ever sent at least one message to ShowMe AI. 'Active in 30d' sent one in the last 30 days."
+                    />
+                    <Stat
+                      label="Messages / user"
+                      value={ai.messages.perUser.toFixed(1)}
+                      sub={`median ${ai.messages.medianPerUser} · ${ai.messages.userMessages.toLocaleString()} messages total`}
+                      info="User messages sent to ShowMe AI divided by the number of people who've used it. Median is the typical user; a few heavy users pull the average up. Assistant replies and tool steps aren't counted."
+                    />
+                    <Stat
+                      label="Cost / message"
+                      value={costPerMsg !== null ? usd(costPerMsg, 4) : '—'}
+                      sub={
+                        openai.configured
+                          ? costPerMsg !== null
+                            ? `${openai.scope} spend ÷ ${msgsInWindow.toLocaleString()} messages (last ${openai.windowDays}d)`
+                            : (openai.error ?? 'no spend data yet')
+                          : 'add OPENAI_ADMIN_KEY'
+                      }
+                      info={`OpenAI ${openai.scope} spend over the last ${openai.windowDays} days divided by user messages in the same window. ${
+                        openai.scope === 'organization'
+                          ? 'Covers the whole OpenAI organization — set OPENAI_PROJECT_ID to scope it to this app.'
+                          : 'Scoped to this app’s OpenAI project.'
+                      }`}
+                    />
+                    <Stat
+                      label={`Spend (${openai.windowDays}d)`}
+                      value={
+                        openai.totalCost !== null
+                          ? usd(openai.totalCost)
+                          : '—'
+                      }
+                      sub={
+                        openai.configured
+                          ? costPerUser !== null
+                            ? `${usd(costPerUser)} per active AI user`
+                            : (openai.error ?? 'no spend data yet')
+                          : 'add OPENAI_ADMIN_KEY (an Admin key)'
+                      }
+                      info={`Total OpenAI ${openai.scope} cost over the last ${openai.windowDays} days, from the OpenAI Usage/Costs Admin API${
+                        openai.coverageStart
+                          ? `; data from ${fmtDay(openai.coverageStart)}`
+                          : ''
+                      }.`}
+                    />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <Stat
+                      label="Repeat users"
+                      value={pct(ai.users.repeatShare)}
+                      sub={`${ai.users.repeat.toLocaleString()} used AI on 2+ days`}
+                      info="Share of AI users who came back and used it on at least two different days — a signal the feature is sticky, not a one-time novelty."
+                    />
+                    <Stat
+                      label="Failed responses"
+                      value={pct(ai.reliability.failureRate)}
+                      sub={`${ai.reliability.failed.toLocaleString()} of ${ai.reliability.jobs.toLocaleString()} response jobs`}
+                      info="Share of AI response jobs that ended in an error state. High values mean users are hitting broken replies."
+                    />
+                    <Stat
+                      label="Response time"
+                      value={
+                        ai.reliability.p50LatencySec !== null
+                          ? `${ai.reliability.p50LatencySec.toFixed(1)}s`
+                          : '—'
+                      }
+                      sub={
+                        ai.reliability.p90LatencySec !== null
+                          ? `p90 ${ai.reliability.p90LatencySec.toFixed(1)}s`
+                          : 'no timing data'
+                      }
+                      info="Median (p50) and 90th-percentile time from an AI response job starting to completing. p90 is the slow tail users notice."
+                    />
+                  </div>
+
+                  <Panel
+                    title="AI messages per day"
+                    hint="User messages sent to ShowMe AI each day."
+                    info="One point per day = messages users sent to ShowMe AI (not replies). Shows whether AI usage is growing."
+                  >
+                    <LineChart
+                      data={aiDaily}
+                      series={[
+                        { key: 'messages', label: 'Messages', color: 'var(--chart-2)', area: true },
+                      ]}
+                    />
+                  </Panel>
+
+                  <Panel
+                    title="People using AI per day"
+                    hint="Distinct accounts that sent an AI message that day."
+                    info="Daily active AI users — distinct accounts that sent at least one message to ShowMe AI that day."
+                  >
+                    <LineChart
+                      data={aiDaily}
+                      series={[
+                        { key: 'users', label: 'Users', color: 'var(--chart-3)', area: true },
+                      ]}
+                    />
+                  </Panel>
+
+                  <Panel
+                    title="Messages per user"
+                    hint="How many messages each AI user has sent, bucketed."
+                    info="AI users grouped by lifetime message count. A big '1' bar means most people try it once; weight in the higher buckets means real adoption."
+                  >
+                    <BarChart
+                      color="var(--chart-4)"
+                      data={ai.messages.distribution.map((d) => ({
+                        label: d.bucket,
+                        value: d.users,
+                        sub: `${d.users} users`,
+                      }))}
+                    />
+                  </Panel>
+
+                  {openai.configured && spendDaily.length > 0 ? (
+                    <Panel
+                      title="OpenAI spend per day"
+                      hint={`${openai.scope} cost, USD. Usage data lags ~1 day.`}
+                      info={`Daily OpenAI ${openai.scope} cost from the Costs Admin API.${
+                        openai.tokens
+                          ? ` Over this window: ${(openai.tokens.input / 1e6).toFixed(1)}M input + ${(openai.tokens.output / 1e6).toFixed(1)}M output tokens across ${openai.tokens.requests.toLocaleString()} model requests.`
+                          : ''
+                      }`}
+                    >
+                      <LineChart
+                        data={spendDaily.map((d) => ({ day: d.day, cost: d.cost }))}
+                        series={[
+                          { key: 'cost', label: 'Spend', color: 'var(--chart-1)', area: true },
+                        ]}
+                        format={(n) => usd(n, 2)}
+                      />
+                    </Panel>
+                  ) : (
+                    <Panel title="OpenAI spend per day">
+                      <p className="text-sm text-muted-foreground">
+                        {!openai.configured ? (
+                          <>
+                            Add{' '}
+                            <code className="text-foreground">OPENAI_ADMIN_KEY</code>{' '}
+                            (an OpenAI <em>Admin</em> key, created by an org owner
+                            under Settings → Admin keys) to pull spend, token
+                            usage, and cost-per-message. Optionally set{' '}
+                            <code className="text-foreground">OPENAI_PROJECT_ID</code>{' '}
+                            to scope the numbers to this app&rsquo;s project.
+                          </>
+                        ) : (
+                          (openai.error ??
+                            'No OpenAI cost data returned for this window yet (usage lags ~1 day).')
+                        )}
+                      </p>
+                    </Panel>
+                  )}
+                </>
+              )
+            })()
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -10,6 +10,8 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getGrowthAnalytics } from '@/lib/analytics/growth'
 import { getAppStoreDownloads, type AppStoreDownloads } from '@/lib/analytics/app-store'
+import { getAiAnalytics, type AiAnalytics } from '@/lib/analytics/ai'
+import { getOpenAiSpend, type OpenAiSpend } from '@/lib/analytics/openai'
 import { GrowthDashboard } from '@/components/analytics/growth-dashboard'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -69,6 +71,31 @@ async function getAppStoreSafely(): Promise<AppStoreDownloads> {
   }
 }
 
+async function getAiSafely(): Promise<AiAnalytics | null> {
+  try {
+    return await getAiAnalytics()
+  } catch {
+    return null
+  }
+}
+
+async function getOpenAiSafely(): Promise<OpenAiSpend> {
+  try {
+    return await getOpenAiSpend(30)
+  } catch (err) {
+    return {
+      configured: true,
+      error: err instanceof Error ? err.message : 'OpenAI usage request failed.',
+      scope: 'organization',
+      windowDays: 30,
+      totalCost: null,
+      daily: [],
+      tokens: null,
+      coverageStart: null,
+    }
+  }
+}
+
 function fmtMonth(key: string): string {
   return new Date(`${key.slice(0, 7)}-15T12:00:00Z`).toLocaleDateString('en-US', {
     timeZone: 'America/Chicago',
@@ -78,10 +105,12 @@ function fmtMonth(key: string): string {
 }
 
 export default async function OverviewPage() {
-  const [counts, analytics, appStore] = await Promise.all([
+  const [counts, analytics, appStore, ai, openai] = await Promise.all([
     getCounts(),
     getGrowthAnalytics(),
     getAppStoreSafely(),
+    getAiSafely(),
+    getOpenAiSafely(),
   ])
 
   const downloadsHint = !appStore.configured
@@ -195,7 +224,12 @@ export default async function OverviewPage() {
 
       <Separator className="bg-white/10" />
 
-      <GrowthDashboard analytics={analytics} appStore={appStore} />
+      <GrowthDashboard
+        analytics={analytics}
+        appStore={appStore}
+        ai={ai}
+        openai={openai}
+      />
     </div>
   )
 }

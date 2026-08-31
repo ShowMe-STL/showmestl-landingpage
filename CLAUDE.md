@@ -202,7 +202,8 @@ table). CRUD pages for places/events/playlists/etc. live under
 
 The Overview page (`app/admin/(dashboard)/page.tsx`, `dynamic = 'force-dynamic'`)
 renders the live count cards **and** `<GrowthDashboard />` — a YC-style funnel
-view (Signups · Activation · Active users · Retention):
+view (Signups · Activation · Active users · Retention · AI). Shared date/pagination
+helpers live in `lib/analytics/shared.ts`.
 
 - **`lib/analytics/growth.ts`** — `getGrowthAnalytics()`. Paginates the raw event
   tables (`profiles`, `check_ins`, `check_in_comments`, `liked_places`,
@@ -240,10 +241,23 @@ view (Signups · Activation · Active users · Retention):
   downloads = MONTHLY reports for every complete month (from
   `APP_STORE_CONNECT_FIRST_MONTH`, default 15 months back) + DAILY for the
   current partial month; shown as a top-of-Overview count card.
+- **`lib/analytics/ai.ts`** — `getAiAnalytics()`. ShowMe AI adoption from the
+  `showme_ai_chats` / `_messages` / `_response_jobs` tables: distinct users,
+  messages/user (mean + median), per-day usage, message-count distribution,
+  repeat-day users, job failure rate, and p50/p90 latency from
+  `completed_at - started_at`. No token/cost data is stored, so dollars come
+  from OpenAI instead. Wrapped in `getAiSafely()` → returns `null` on error.
+- **`lib/analytics/openai.ts`** — `getOpenAiSpend()`. OpenAI **Usage/Costs Admin
+  API** (`/v1/organization/costs` + `/usage/completions`). Needs
+  `OPENAI_ADMIN_KEY` (an Admin key — `sk-admin-…`); `OPENAI_PROJECT_ID` scopes
+  it to one project, else it's org-wide (note in the UI). Costs `amount.value`
+  is USD; buckets are 1-day. Cost/message = window spend ÷ AI user-messages in
+  the same window. Degrades to `{ configured: false }`.
 - **`components/analytics/`** — inline-SVG charts (no charting dep), using the
-  `--chart-1..5` tokens. `charts.tsx` (line/area + bar, hover tooltips),
-  `cohort-triangle.tsx`, `growth-dashboard.tsx` (client; 7/30/90/All range
-  toggle + tabs).
+  `--chart-1..5` tokens. `charts.tsx` (line/area + vertical bar + `HBarChart`,
+  hover tooltips), `cohort-triangle.tsx`, `growth-dashboard.tsx` (client;
+  7/30/90/All range toggle + tabs). `InfoDot` tooltips are `position: fixed`
+  so they escape the `Card`'s `overflow-hidden`.
 
 ## Deployment
 
