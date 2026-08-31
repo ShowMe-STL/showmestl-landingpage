@@ -402,14 +402,15 @@ export function GrowthDashboard({
 
           <Panel
             title="Key actions — users reached"
-            hint="Distinct users who have ever done each action; the note shows first-7-day reach and total volume."
-            info="For each key action, how many distinct users have ever done it. The muted note is: users who did it within their first 7 days · total number of times it's happened. Shows which actions people actually reach and where the funnel narrows."
+            hint="Each bar = how many different people have ever done that action. Hover a bar for the first-week and lifetime breakdown."
+            info="For each key action, the number of distinct users who have ever done it at least once — a feature-adoption funnel. Hover a bar to see how many reached it within their first 7 days and how many times it's happened in total."
           >
             <HBarChart
+              unit="users"
               data={analytics.activation.byAction.map((a) => ({
                 label: a.label,
                 value: a.users,
-                note: `${a.usersFirst7d} in first 7d · ${a.events.toLocaleString()} total`,
+                tooltip: `${a.users.toLocaleString()} users have ever done this — ${a.usersFirst7d.toLocaleString()} of them within their first 7 days. It has happened ${a.events.toLocaleString()} times in total.`,
               }))}
             />
           </Panel>

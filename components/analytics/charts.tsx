@@ -272,83 +272,99 @@ export function LineChart({
   )
 }
 
-// Horizontal bars — better for many categories with wordy labels. Baseline is
-// the left edge; value sits just past the bar end, an optional muted note after.
+// Horizontal bars — better for many categories with wordy labels. One number
+// per bar (its value, with an optional unit word); anything else goes in the
+// hover tooltip so a row is never a wall of unlabelled digits.
 export function HBarChart({
   data,
   color = 'var(--chart-2)',
-  format = (n) => n.toLocaleString(),
+  unit,
 }: {
-  data: { label: string; value: number; note?: string }[]
+  data: { label: string; value: number; tooltip?: string }[]
   color?: string
-  format?: (n: number) => string
+  unit?: string
 }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const rowH = 30
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(
+    null,
+  )
+  const rowH = 34
   const labelW = 150
-  const valueW = 150
+  const valueW = 120
   const height = data.length * rowH + 8
   const trackW = VB_W - labelW - valueW
   const max = niceMax(Math.max(1, ...data.map((d) => d.value)))
 
+  const move = (i: number, clientX: number, clientY: number) => {
+    const r = wrapRef.current?.getBoundingClientRect()
+    if (!r) return
+    setHover({ i, x: clientX - r.left, y: clientY - r.top })
+  }
+
   return (
-    <svg
-      viewBox={`0 0 ${VB_W} ${height}`}
-      className="w-full"
-      style={{ height: 'auto' }}
-    >
-      {data.map((d, i) => {
-        const w = (d.value / max) * trackW
-        const y = i * rowH + 4
-        const dim = hover !== null && hover !== i
-        return (
-          <g
-            key={d.label}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(null)}
-            opacity={dim ? 0.45 : 1}
-          >
-            <rect
-              x={0}
-              y={y}
-              width={VB_W}
-              height={rowH}
-              fill="transparent"
-            />
-            <text
-              x={labelW - 10}
-              y={y + rowH / 2}
-              textAnchor="end"
-              dominantBaseline="central"
-              fontSize={11}
-              fill={AXIS}
+    <div className="relative" ref={wrapRef}>
+      <svg
+        viewBox={`0 0 ${VB_W} ${height}`}
+        className="w-full"
+        style={{ height: 'auto' }}
+      >
+        {data.map((d, i) => {
+          const w = (d.value / max) * trackW
+          const y = i * rowH + 4
+          const dim = hover !== null && hover.i !== i
+          return (
+            <g
+              key={d.label}
+              onMouseEnter={(e) => move(i, e.clientX, e.clientY)}
+              onMouseMove={(e) => move(i, e.clientX, e.clientY)}
+              onMouseLeave={() => setHover(null)}
+              opacity={dim ? 0.4 : 1}
             >
-              {d.label}
-            </text>
-            <rect
-              x={labelW}
-              y={y + rowH / 2 - 8}
-              width={Math.max(2, w)}
-              height={16}
-              rx={4}
-              fill={color}
-            />
-            <text
-              x={labelW + Math.max(2, w) + 8}
-              y={y + rowH / 2}
-              dominantBaseline="central"
-              fontSize={11}
-              fill="var(--foreground)"
-            >
-              {format(d.value)}
-              {d.note ? (
-                <tspan fill={AXIS}>{`  ${d.note}`}</tspan>
-              ) : null}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
+              <rect x={0} y={y} width={VB_W} height={rowH} fill="transparent" />
+              <text
+                x={labelW - 10}
+                y={y + rowH / 2}
+                textAnchor="end"
+                dominantBaseline="central"
+                fontSize={11}
+                fill={AXIS}
+              >
+                {d.label}
+              </text>
+              <rect
+                x={labelW}
+                y={y + rowH / 2 - 8}
+                width={Math.max(2, w)}
+                height={16}
+                rx={4}
+                fill={color}
+              />
+              <text
+                x={labelW + Math.max(2, w) + 8}
+                y={y + rowH / 2}
+                dominantBaseline="central"
+                fontSize={11}
+                fill="var(--foreground)"
+              >
+                {d.value.toLocaleString()}
+                {unit ? <tspan fill={AXIS}>{` ${unit}`}</tspan> : null}
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+      {hover !== null && data[hover.i]?.tooltip && (
+        <div
+          className="pointer-events-none absolute z-[60] w-56 -translate-x-1/2 -translate-y-full rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-relaxed text-muted-foreground shadow-xl"
+          style={{ left: hover.x, top: hover.y - 8 }}
+        >
+          <div className="mb-0.5 font-medium text-foreground">
+            {data[hover.i].label}
+          </div>
+          {data[hover.i].tooltip}
+        </div>
+      )}
+    </div>
   )
 }
 
