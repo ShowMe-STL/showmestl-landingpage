@@ -72,7 +72,12 @@ export type GrowthAnalytics = {
     firstWeek: {
       /** Only counts users who signed up on/after this day (post-migration). */
       since: string
+      /** Last signup day whose 7-day window has fully elapsed (today - 7). */
+      through: string
+      /** Post-migration accounts with a complete first week — the denominator. */
       eligible: number
+      /** Post-migration accounts still inside their first 7 days (not counted). */
+      inProgress: number
       buckets: { bucket: '0' | '1' | '2' | '3+'; users: number }[]
     }
     weeklyTrend: {
@@ -301,6 +306,9 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
   const firstWeekEligibleUsers = [...signupDay.entries()].filter(
     ([, day]) => day >= SIGNUP_TIMELINE_START && daysBetween(day, today) >= 7,
   )
+  const firstWeekInProgress = [...signupDay.values()].filter(
+    (day) => day >= SIGNUP_TIMELINE_START && daysBetween(day, today) < 7,
+  ).length
   const bucketCounts = { '0': 0, '1': 0, '2': 0, '3+': 0 }
   for (const [userId] of firstWeekEligibleUsers) {
     const n = perUser.get(userId)?.first7.length ?? 0
@@ -454,7 +462,9 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
       byAction,
       firstWeek: {
         since: SIGNUP_TIMELINE_START,
+        through: addDays(today, -7),
         eligible: firstWeekEligibleUsers.length,
+        inProgress: firstWeekInProgress,
         buckets: [
           { bucket: '0', users: bucketCounts['0'] },
           { bucket: '1', users: bucketCounts['1'] },

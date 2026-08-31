@@ -376,15 +376,19 @@ export function GrowthDashboard({
                     key={b.bucket}
                     label="Activated in first 7 days"
                     value={el ? pct(activatedFirstWeek / el) : '—'}
-                    sub={`${activatedFirstWeek} of ${el} new accounts (signed up since ${fmtDay(
+                    sub={`${activatedFirstWeek} of ${el} accounts that signed up ${fmtDay(
                       analytics.activation.firstWeek.since,
-                    )})`}
-                    info={`Of accounts that signed up on/after ${fmtDay(
+                    )} – ${fmtDay(analytics.activation.firstWeek.through)}`}
+                    info={`Denominator = accounts that signed up on/after ${fmtDay(
                       analytics.activation.firstWeek.since,
-                    )} and have had a full 7 days since, the share that did ≥1 key action within those first 7 days. The ~${(
+                    )} AND whose first 7 days have fully elapsed (so signed up on/before ${fmtDay(
+                      analytics.activation.firstWeek.through,
+                    )}). ${
+                      analytics.activation.firstWeek.inProgress
+                    } more recent accounts are still inside their first week and aren't counted yet. The ~${(
                       (analytics.signups[0]?.cumulative ?? 0) -
                       (analytics.signups[0]?.count ?? 0)
-                    ).toLocaleString()} accounts imported in the migration are excluded — their real onboarding window wasn't tracked.`}
+                    ).toLocaleString()} migration-imported accounts are excluded entirely.`}
                   />
                 )
               })}
@@ -402,10 +406,12 @@ export function GrowthDashboard({
               sub={`${
                 analytics.activation.firstWeek.buckets.find((b) => b.bucket === '0')
                   ?.users ?? 0
-              } of ${analytics.activation.firstWeek.eligible} new accounts did nothing in week 1`}
-              info={`Of accounts that signed up on/after ${fmtDay(
+              } of ${analytics.activation.firstWeek.eligible} accounts did nothing in week 1`}
+              info={`Same denominator as "Activated in first 7 days" — accounts that signed up ${fmtDay(
                 analytics.activation.firstWeek.since,
-              )} and have had a full 7 days since, the share that completed zero key actions in their first 7 days. This is the main early-funnel drop-off. Migration-imported accounts are excluded.`}
+              )} – ${fmtDay(
+                analytics.activation.firstWeek.through,
+              )} — showing the share that completed zero key actions in their first 7 days. This is the main early-funnel drop-off.`}
             />
           </div>
 
@@ -426,12 +432,16 @@ export function GrowthDashboard({
 
           <Panel
             title="Meaningful actions in first 7 days"
-            hint={`New accounts (signed up since ${fmtDay(
+            hint={`The same ${analytics.activation.firstWeek.eligible} accounts (signed up ${fmtDay(
               analytics.activation.firstWeek.since,
-            )}) bucketed by how many key actions they did in week 1.`}
-            info={`Accounts that signed up on/after ${fmtDay(
+            )} – ${fmtDay(
+              analytics.activation.firstWeek.through,
+            )}), bucketed by how many key actions they did in week 1.`}
+            info={`The ${analytics.activation.firstWeek.eligible} accounts that signed up ${fmtDay(
               analytics.activation.firstWeek.since,
-            )} with a full week elapsed, bucketed by how many key actions (any type, counting repeats) they completed in their first 7 days. The '0 actions' bar is the group that never engaged. Migration-imported accounts are excluded — their first week wasn't tracked.`}
+            )} – ${fmtDay(
+              analytics.activation.firstWeek.through,
+            )}, bucketed by how many key actions (any type, counting repeats) they completed in their first 7 days. The '0 actions' bar is the group that never engaged. Migration-imported accounts and accounts still in their first week are excluded.`}
           >
             <BarChart
               data={analytics.activation.firstWeek.buckets.map((b) => ({
