@@ -205,14 +205,19 @@ renders the live count cards **and** `<GrowthDashboard />` — a YC-style funnel
 view (Signups · Activation · Active users · Retention):
 
 - **`lib/analytics/growth.ts`** — `getGrowthAnalytics()`. Paginates the raw event
-  tables (`profiles`, `check_ins`, `check_in_comments`, `playlists` w/ non-null
-  `owner_id`, `saved_playlists`, `showme_ai_messages` joined to its chat) and
-  computes everything in process. Days bucketed in `America/Chicago`. **Day keys
-  are anchored at noon UTC** — anchoring at midnight makes `Intl` format them
-  back a day and `addDays` loops forever (this OOM'd the build once).
-  - "Activated" = user ever did ≥1 meaningful action (AI message, check-in,
-    check-in comment, playlist created, playlist saved). No "playlist comments"
-    metric — there's no such table.
+  tables (`profiles`, `check_ins`, `check_in_comments`, `liked_places`,
+  `playlists` w/ non-null `owner_id`, `saved_playlists`, `friendships`,
+  `showme_ai_messages` joined to its chat) and computes everything in process.
+  Days bucketed in `America/Chicago`. **Day keys are anchored at noon UTC** —
+  anchoring at midnight makes `Intl` format them back a day and `addDays` loops
+  forever (this OOM'd the build once).
+  - The 8 key actions (`ActionType` / `ACTION_LABELS`): AI message, place
+    check-in, event check-in (`check_ins` split by `event_id`/`archived_event_id`),
+    check-in comment, liked place, playlist created, playlist saved, friend
+    added (one `friendships` row → an event for *both* members). No "playlist
+    comments" metric — there's no such table.
+  - "Activated" = user ever did ≥1 key action. Adding actions here raises the
+    activation rate — keep `KEY_ACTIONS` copy in `growth-dashboard.tsx` in sync.
   - `SIGNUP_TIMELINE_START` ('2026-08-09') clips the migration-day import
     (~370 accounts stamped 2026-08-08) off the signups chart; those users
     still count toward the cumulative/all-time totals.

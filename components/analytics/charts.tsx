@@ -272,6 +272,86 @@ export function LineChart({
   )
 }
 
+// Horizontal bars — better for many categories with wordy labels. Baseline is
+// the left edge; value sits just past the bar end, an optional muted note after.
+export function HBarChart({
+  data,
+  color = 'var(--chart-2)',
+  format = (n) => n.toLocaleString(),
+}: {
+  data: { label: string; value: number; note?: string }[]
+  color?: string
+  format?: (n: number) => string
+}) {
+  const [hover, setHover] = useState<number | null>(null)
+  const rowH = 30
+  const labelW = 150
+  const valueW = 150
+  const height = data.length * rowH + 8
+  const trackW = VB_W - labelW - valueW
+  const max = niceMax(Math.max(1, ...data.map((d) => d.value)))
+
+  return (
+    <svg
+      viewBox={`0 0 ${VB_W} ${height}`}
+      className="w-full"
+      style={{ height: 'auto' }}
+    >
+      {data.map((d, i) => {
+        const w = (d.value / max) * trackW
+        const y = i * rowH + 4
+        const dim = hover !== null && hover !== i
+        return (
+          <g
+            key={d.label}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+            opacity={dim ? 0.45 : 1}
+          >
+            <rect
+              x={0}
+              y={y}
+              width={VB_W}
+              height={rowH}
+              fill="transparent"
+            />
+            <text
+              x={labelW - 10}
+              y={y + rowH / 2}
+              textAnchor="end"
+              dominantBaseline="central"
+              fontSize={11}
+              fill={AXIS}
+            >
+              {d.label}
+            </text>
+            <rect
+              x={labelW}
+              y={y + rowH / 2 - 8}
+              width={Math.max(2, w)}
+              height={16}
+              rx={4}
+              fill={color}
+            />
+            <text
+              x={labelW + Math.max(2, w) + 8}
+              y={y + rowH / 2}
+              dominantBaseline="central"
+              fontSize={11}
+              fill="var(--foreground)"
+            >
+              {format(d.value)}
+              {d.note ? (
+                <tspan fill={AXIS}>{`  ${d.note}`}</tspan>
+              ) : null}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
 export function BarChart({
   data,
   color = 'var(--chart-2)',

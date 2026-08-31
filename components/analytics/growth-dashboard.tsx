@@ -1,10 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Info } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { LineChart, BarChart } from '@/components/analytics/charts'
+import { LineChart, BarChart, HBarChart } from '@/components/analytics/charts'
 import { CohortTriangle } from '@/components/analytics/cohort-triangle'
 import type { GrowthAnalytics } from '@/lib/analytics/growth'
 import type { AppStoreDownloads } from '@/lib/analytics/app-store'
@@ -19,6 +19,11 @@ const RANGES: { key: RangeKey; label: string }[] = [
 ]
 
 const pct = (n: number) => `${(n * 100).toFixed(n < 0.1 ? 1 : 0)}%`
+
+// Kept in sync with ACTION_LABELS in lib/analytics/growth.ts (can't import that
+// value here — it's a server-only module).
+const KEY_ACTIONS =
+  'sending an AI message, checking into a place or an event, commenting on a check-in, liking a place, creating or saving a playlist, or adding a friend'
 
 const fmtDay = (key: string) =>
   new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', {
@@ -35,22 +40,47 @@ const fmtMonth = (key: string) =>
     year: 'numeric',
   })
 
+// Fixed-position so the tooltip escapes the Card's `overflow-hidden` and every
+// stacking context on the page. Coordinates are measured from the trigger on
+// hover / focus and clamped to the viewport.
 function InfoDot({ text }: { text: string }) {
+  const ref = useRef<HTMLButtonElement>(null)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+
+  const show = () => {
+    const r = ref.current?.getBoundingClientRect()
+    if (!r) return
+    const x = Math.min(
+      Math.max(r.left + r.width / 2, 132),
+      window.innerWidth - 132,
+    )
+    setPos({ x, y: r.bottom + 6 })
+  }
+  const hide = () => setPos(null)
+
   return (
-    <span className="group/info relative inline-flex shrink-0">
+    <span className="inline-flex shrink-0">
       <button
+        ref={ref}
         type="button"
         aria-label={text}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={hide}
         className="text-muted-foreground/60 transition-colors hover:text-foreground focus-visible:text-foreground focus-visible:outline-none"
       >
         <Info className="h-3.5 w-3.5" />
       </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 hidden w-56 -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-relaxed font-normal text-muted-foreground shadow-xl group-hover/info:block group-focus-within/info:block"
-      >
-        {text}
-      </span>
+      {pos && (
+        <span
+          role="tooltip"
+          className="pointer-events-none fixed z-[200] w-60 max-w-[calc(100vw-24px)] -translate-x-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-xs leading-relaxed font-normal text-muted-foreground shadow-xl"
+          style={{ left: pos.x, top: pos.y }}
+        >
+          {text}
+        </span>
+      )}
     </span>
   )
 }
@@ -253,7 +283,7 @@ export function GrowthDashboard({
               label="Activated"
               value={pct(analytics.totals.activationRate)}
               sub={`${analytics.totals.activatedUsers.toLocaleString()} of ${analytics.totals.users.toLocaleString()} users ever did a key action`}
-              info="Share of all accounts that have ever completed at least one key action: sent an AI message, created a check-in, commented on a check-in, created a playlist, or saved a playlist."
+              info={`Share of all accounts that have ever completed at least one key action: ${KEY_ACTIONS}.`}
             />
           </div>
 
@@ -331,7 +361,7 @@ export function GrowthDashboard({
               label="Activation rate"
               value={pct(analytics.totals.activationRate)}
               sub="users who ever did ≥1 key action"
-              info="Share of all accounts that have ever done at least one key action (AI message, check-in, check-in comment, playlist created, or playlist saved). Same number as 'Activated' on the Signups tab."
+              info={`Share of all accounts that have ever done at least one key action: ${KEY_ACTIONS}. Same number as 'Activated' on the Signups tab.`}
             />
             {analytics.activation.firstWeek.buckets
               .filter((b) => b.bucket !== '0')
@@ -372,14 +402,14 @@ export function GrowthDashboard({
 
           <Panel
             title="Key actions — users reached"
-            hint="Distinct users who performed each action within their first 7 days (bar) — hover for all-time."
-            info="For each action type, the number of distinct users who did it at least once in their first 7 days. Hover a bar to also see the all-time count. Shows which actions new users actually reach."
+            hint="Distinct users who have ever done each action; the note shows first-7-day reach and total volume."
+            info="For each key action, how many distinct users have ever done it. The muted note is: users who did it within their first 7 days · total number of times it's happened. Shows which actions people actually reach and where the funnel narrows."
           >
-            <BarChart
+            <HBarChart
               data={analytics.activation.byAction.map((a) => ({
-                label: a.label.replace(' ', '\n'),
-                value: a.usersFirst7d,
-                sub: `${a.usersFirst7d} in first 7 days · ${a.users} ever`,
+                label: a.label,
+                value: a.users,
+                note: `${a.usersFirst7d} in first 7d · ${a.events.toLocaleString()} total`,
               }))}
             />
           </Panel>
@@ -449,7 +479,7 @@ export function GrowthDashboard({
           <Panel
             title="Daily active users"
             hint="Active = performed a key action that day. New = signed up the same day."
-            info="Distinct active users per day. 'New' is the slice that signed up that same day; the rest are returning. There's no app-open telemetry, so 'active' always means a key action, not just launching the app."
+            info={`Distinct active users per day. 'New' is the slice that signed up that same day; the rest are returning. There's no app-open telemetry, so 'active' means a key action (${KEY_ACTIONS}) — not just launching the app.`}
           >
             <LineChart
               data={activeDaily}

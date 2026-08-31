@@ -17,17 +17,23 @@ const dayFmt = new Intl.DateTimeFormat('en-CA', {
 
 export type ActionType =
   | 'ai_message'
-  | 'check_in'
+  | 'place_check_in'
+  | 'event_check_in'
   | 'check_in_comment'
+  | 'liked_place'
   | 'playlist_created'
   | 'playlist_saved'
+  | 'friend_added'
 
 export const ACTION_LABELS: Record<ActionType, string> = {
   ai_message: 'AI messages',
-  check_in: 'Check-ins',
+  place_check_in: 'Place check-ins',
+  event_check_in: 'Event check-ins',
   check_in_comment: 'Check-in comments',
+  liked_place: 'Liked places',
   playlist_created: 'Playlists created',
   playlist_saved: 'Playlists saved',
+  friend_added: 'Friends added',
 }
 
 const ACTION_TYPES = Object.keys(ACTION_LABELS) as ActionType[]
@@ -61,6 +67,7 @@ export type GrowthAnalytics = {
       label: string
       users: number
       usersFirst7d: number
+      events: number
     }[]
     firstWeek: {
       eligible: number
@@ -142,18 +149,32 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     profileRows,
     checkInRows,
     commentRows,
+    likedPlaceRows,
     playlistRows,
     savedRows,
+    friendshipRows,
     aiRows,
   ] = await Promise.all([
     fetchAll<{ id: string; created_at: string }>((f, t) =>
       supabase.from('profiles').select('id, created_at').order('created_at').range(f, t),
     ),
-    fetchAll<{ user_id: string; started_at: string }>((f, t) =>
-      supabase.from('check_ins').select('user_id, started_at').order('started_at').range(f, t),
+    fetchAll<{
+      user_id: string
+      started_at: string
+      event_id: number | null
+      archived_event_id: number | null
+    }>((f, t) =>
+      supabase
+        .from('check_ins')
+        .select('user_id, started_at, event_id, archived_event_id')
+        .order('started_at')
+        .range(f, t),
     ),
     fetchAll<{ user_id: string; created_at: string }>((f, t) =>
       supabase.from('check_in_comments').select('user_id, created_at').order('created_at').range(f, t),
+    ),
+    fetchAll<{ user_id: string; created_at: string }>((f, t) =>
+      supabase.from('liked_places').select('user_id, created_at').order('created_at').range(f, t),
     ),
     fetchAll<{ owner_id: string; created_at: string }>((f, t) =>
       supabase
@@ -165,6 +186,13 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     ),
     fetchAll<{ user_id: string; created_at: string }>((f, t) =>
       supabase.from('saved_playlists').select('user_id, created_at').order('created_at').range(f, t),
+    ),
+    fetchAll<{ user_id_a: string; user_id_b: string; created_at: string }>((f, t) =>
+      supabase
+        .from('friendships')
+        .select('user_id_a, user_id_b, created_at')
+        .order('created_at')
+        .range(f, t),
     ),
     // showme_ai_messages has no user_id of its own — it hangs off the chat.
     fetchAll<{ created_at: string; chat: { user_id: string } | { user_id: string }[] | null }>(
@@ -187,10 +215,19 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     events.push({ userId, day: dayKey(ts), type })
   }
 
-  for (const r of checkInRows) pushEv(r.user_id, r.started_at, 'check_in')
+  for (const r of checkInRows) {
+    const isEvent = r.event_id != null || r.archived_event_id != null
+    pushEv(r.user_id, r.started_at, isEvent ? 'event_check_in' : 'place_check_in')
+  }
   for (const r of commentRows) pushEv(r.user_id, r.created_at, 'check_in_comment')
+  for (const r of likedPlaceRows) pushEv(r.user_id, r.created_at, 'liked_place')
   for (const r of playlistRows) pushEv(r.owner_id, r.created_at, 'playlist_created')
   for (const r of savedRows) pushEv(r.user_id, r.created_at, 'playlist_saved')
+  for (const r of friendshipRows) {
+    // One friendship row = both people gained a friend at that moment.
+    pushEv(r.user_id_a, r.created_at, 'friend_added')
+    pushEv(r.user_id_b, r.created_at, 'friend_added')
+  }
   for (const r of aiRows) {
     const chat = Array.isArray(r.chat) ? r.chat[0] : r.chat
     pushEv(chat?.user_id, r.created_at, 'ai_message')
@@ -236,6 +273,10 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
   const totalUsers = profileRows.length
 
   // ---- Activation -------------------------------------------------------
+  const eventCountByType = new Map<ActionType, number>()
+  for (const ev of events) {
+    eventCountByType.set(ev.type, (eventCountByType.get(ev.type) ?? 0) + 1)
+  }
   const byAction = ACTION_TYPES.map((type) => {
     const users = new Set<string>()
     const usersFirst7d = new Set<string>()
@@ -248,8 +289,9 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
       label: ACTION_LABELS[type],
       users: users.size,
       usersFirst7d: usersFirst7d.size,
+      events: eventCountByType.get(type) ?? 0,
     }
-  })
+  }).sort((a, b) => b.users - a.users)
 
   const firstWeekEligibleUsers = [...signupDay.entries()].filter(
     ([, day]) => daysBetween(day, today) >= 7,
