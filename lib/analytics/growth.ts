@@ -91,7 +91,15 @@ export type GrowthAnalytics = {
     daily: { day: string; total: number; new: number; returning: number }[]
     wau: { day: string; count: number }[]
     stickiness: { day: string; ratio: number }[]
-    current: { dau: number; wau: number; mau: number; ratio: number }
+    current: {
+      dau: number
+      wau: number
+      mau: number
+      /** Mean DAU over the last 7 complete days (today excluded when possible). */
+      avgDau: number
+      /** avgDau ÷ WAU for that same week — stickiness on a typical day. */
+      ratio: number
+    }
   }
   retention: {
     weekOffsets: number[]
@@ -352,13 +360,26 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     return { day, ratio: w ? (activeByDay.get(day)?.size ?? 0) / w : 0 }
   })
 
+  // Stickiness off a *typical* day, not today's still-filling-in count: mean DAU
+  // over the last 7 complete days (drop today when we have the history), divided
+  // by the WAU for that same window.
+  const stickWindow =
+    activeDays.length > 7 ? activeDays.slice(-8, -1) : activeDays.slice(-7)
+  const avgDau = stickWindow.length
+    ? stickWindow.reduce((s, d) => s + (activeByDay.get(d)?.size ?? 0), 0) /
+      stickWindow.length
+    : 0
+  const stickWau = stickWindow.length
+    ? rollingDistinct(stickWindow[stickWindow.length - 1], stickWindow.length)
+    : 0
+
   const current = {
     dau: activeByDay.get(today)?.size ?? 0,
     wau: rollingDistinct(today, 7),
     mau: rollingDistinct(today, 30),
-    ratio: 0,
+    avgDau: Math.round(avgDau * 10) / 10,
+    ratio: stickWau ? avgDau / stickWau : 0,
   }
-  current.ratio = current.wau ? current.dau / current.wau : 0
 
   // ---- Retention -----------------------------------------------------
   // Headline Dn = of users who signed up at least n days ago, the share that

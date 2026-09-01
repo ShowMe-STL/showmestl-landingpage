@@ -239,7 +239,9 @@ helpers live in `lib/analytics/shared.ts`.
   - Every stat tile and panel takes an `info` prop rendered as a hover/focus
     `ⓘ` tooltip (`InfoDot` in `growth-dashboard.tsx`) explaining the metric.
   - DAU/WAU/MAU active = performed a meaningful action that day. No app-open
-    telemetry exists.
+    telemetry exists. The headline **DAU/WAU stickiness** is `current.avgDau`
+    (mean DAU over the last 7 *complete* days — today's partial count dropped)
+    ÷ that week's WAU, not today's DAU ÷ WAU.
   - Retention headline Dn = still active on/after day n; cohort triangle =
     weekly signup cohorts × week-n active.
 - **`lib/analytics/app-store.ts`** — `getAppStoreDownloads()`. App Store Connect

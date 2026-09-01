@@ -530,8 +530,8 @@ export function GrowthDashboard({
             <Stat
               label="DAU / WAU"
               value={pct(analytics.active.current.ratio)}
-              sub="stickiness"
-              info="Today's DAU divided by WAU — the share of weekly-active users who show up on an average day. Higher means people come back more often; ~20%+ is healthy for a consumer social app."
+              sub={`stickiness · avg ${analytics.active.current.avgDau.toLocaleString()} DAU/day`}
+              info="Average daily active users over the last 7 complete days (today's partial count is excluded), divided by that week's WAU — the share of weekly-active users who show up on a typical day. Higher means people come back more often; ~20%+ is healthy for a consumer social app."
             />
           </div>
 
