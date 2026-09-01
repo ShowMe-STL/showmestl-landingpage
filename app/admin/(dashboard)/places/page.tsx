@@ -1,5 +1,41 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PlacesManager } from '@/components/places/places-manager'
+import { BarChart } from '@/components/analytics/charts'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { addDays, dayKey, mondayOf } from '@/lib/analytics/shared'
+
+// The 2026-08-08 seed import dropped ~780 places in one day; the chart starts
+// the Monday after so a single spike doesn't flatten every real week.
+const CHART_SINCE = '2026-08-10'
+const MAX_WEEKS = 16
+
+function placesAddedPerWeek(createdAts: string[]) {
+  const byWeek = new Map<string, number>()
+  for (const iso of createdAts) {
+    const wk = mondayOf(dayKey(iso))
+    if (wk < CHART_SINCE) continue
+    byWeek.set(wk, (byWeek.get(wk) ?? 0) + 1)
+  }
+
+  const thisWeek = mondayOf(dayKey(new Date()))
+  const rows: { label: string; value: number; sub: string }[] = []
+  for (let wk = CHART_SINCE; wk <= thisWeek; wk = addDays(wk, 7)) {
+    const [, m, d] = wk.split('-')
+    const n = byWeek.get(wk) ?? 0
+    rows.push({
+      label: `${Number(m)}/${Number(d)}`,
+      value: n,
+      sub: `Week of ${Number(m)}/${Number(d)} — ${n} place${n === 1 ? '' : 's'} added`,
+    })
+  }
+  return rows.slice(-MAX_WEEKS)
+}
 
 export default async function PlacesPage() {
   const supabase = createAdminClient()
@@ -15,7 +51,7 @@ export default async function PlacesPage() {
     supabase
       .from('places_with_coords')
       .select(
-        'id, name, description, address, website, image_url, image_thumb_url, neighborhood_id, dress_code_id, custom_dress_code, lat, lng',
+        'id, name, description, address, website, image_url, image_thumb_url, neighborhood_id, dress_code_id, custom_dress_code, lat, lng, created_at',
       )
       .order('name'),
     supabase.from('neighborhoods').select('id, name').order('name'),
@@ -49,6 +85,12 @@ export default async function PlacesPage() {
     (trendingRes.data ?? []).map((row) => row.place_id as number),
   )
 
+  const weeklyAdds = placesAddedPerWeek(
+    (placesRes.data ?? [])
+      .map((p) => p.created_at as string | null)
+      .filter((v): v is string => Boolean(v)),
+  )
+
   const places = (placesRes.data ?? []).map((p) => ({
     id: p.id as number,
     name: p.name ?? '',
@@ -74,6 +116,22 @@ export default async function PlacesPage() {
           {places.length} places curated in ShowMeSTL.
         </p>
       </div>
+
+      {weeklyAdds.length > 0 && (
+        <Card className="border-white/10 bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Places added per week</CardTitle>
+            <CardDescription>
+              New place records grouped by the week they were created
+              (America/Chicago). Excludes the initial seed import.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarChart data={weeklyAdds} height={180} color="var(--chart-1)" />
+          </CardContent>
+        </Card>
+      )}
+
       <PlacesManager
         initialPlaces={places}
         neighborhoods={neighborhoodsRes.data ?? []}

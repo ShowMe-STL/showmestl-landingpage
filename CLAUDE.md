@@ -200,6 +200,12 @@ table). CRUD pages for places/events/playlists/etc. live under
 `app/admin/(dashboard)/`. All server reads use the service-role client
 (`lib/supabase/admin.ts`), which bypasses RLS.
 
+The Places page (`app/admin/(dashboard)/places/page.tsx`) shows a small
+"Places added per week" `<BarChart>` above the table, bucketed by
+`created_at` week in `America/Chicago`. `CHART_SINCE = '2026-08-10'` drops
+the ~780-row 2026-08-08 seed import (same migration the growth dashboard
+clips); capped at the last 16 weeks.
+
 The Overview page (`app/admin/(dashboard)/page.tsx`, `dynamic = 'force-dynamic'`)
 renders the live count cards **and** `<GrowthDashboard />` — a YC-style funnel
 view (Signups · Activation · Active users · Retention · AI). Shared date/pagination
