@@ -186,17 +186,26 @@ export async function getAppStoreDownloads(
   const [curY, curM] = todayKey.split('-').map(Number)
   const monthStartKey = `${curY}-${String(curM).padStart(2, '0')}-01`
 
-  // Daily reports: cover both the chart window and the whole current month,
-  // ending two days back (report lag). Iterated from noon UTC so day steps never
-  // land on a DST-shifted instant. Bounded to ~a month of requests.
+  // Daily reports: cover the chart window, the whole current month, AND the whole
+  // previous month. That last part matters because Apple doesn't publish a
+  // month's MONTHLY report until a few days into the next month — so from the 1st
+  // to ~the 5th "last month" has no monthly report and we reconstruct its total
+  // by summing dailies instead. Iterated from noon UTC so day steps never land on
+  // a DST-shifted instant.
   const noon = (ms: number) => {
     const [y, m, d] = ymd(new Date(ms)).split('-').map(Number)
     return Date.UTC(y, m - 1, d, 12)
   }
   const lastDailyMs = noon(Date.now() - 2 * 86_400_000)
+  const prevMonthStartMs = Date.UTC(
+    curM === 1 ? curY - 1 : curY,
+    curM === 1 ? 11 : curM - 2,
+    1,
+    12,
+  )
   const dailyStartMs = Math.min(
     noon(Date.now() - (chartDays + 2) * 86_400_000),
-    Date.UTC(curY, curM - 1, 1, 12),
+    prevMonthStartMs,
   )
   const dailyDates: string[] = []
   for (let ms = dailyStartMs; ms <= lastDailyMs; ms += 86_400_000) {
@@ -246,17 +255,35 @@ export async function getAppStoreDownloads(
     }
   })
 
-  let monthlyTotal = 0
+  // Downloads per calendar month reconstructed from the daily reports — the
+  // fallback for any complete month whose MONTHLY report Apple hasn't published
+  // yet (or that errored).
+  const dailyByMonth = new Map<string, number>()
+  for (const d of dailyAll) {
+    const mk = d.day.slice(0, 7)
+    dailyByMonth.set(mk, (dailyByMonth.get(mk) ?? 0) + d.downloads)
+  }
+
+  let completeMonthsTotal = 0
   monthResults.forEach((r, i) => {
-    if (r === 'error') errors += 1
-    else if (r !== 'missing') {
-      monthlyTotal += r.downloads
-      if (r.downloads > 0) note(`${monthDates[i]}-01`)
+    const mk = monthDates[i]
+    if (r !== 'missing' && r !== 'error') {
+      completeMonthsTotal += r.downloads
+      if (r.downloads > 0) note(`${mk}-01`)
+      return
     }
+    if (r === 'error') errors += 1
+    // MONTHLY unavailable: pre-launch months have no dailies either (→ 0);
+    // a just-ended month gets its total from the dailies we fetched above.
+    const fromDaily = dailyByMonth.get(mk) ?? 0
+    completeMonthsTotal += fromDaily
+    if (fromDaily > 0) note(`${mk}-01`)
   })
 
   const gotAnything =
-    dailyAll.some((d) => d.downloads > 0) || monthlyTotal > 0 || coverageStart
+    dailyAll.some((d) => d.downloads > 0) ||
+    completeMonthsTotal > 0 ||
+    coverageStart
 
   if (!gotAnything && errors > 0) {
     return {
@@ -267,9 +294,7 @@ export async function getAppStoreDownloads(
     }
   }
 
-  const currentMonthDaily = dailyAll
-    .filter((d) => d.day >= monthStartKey)
-    .reduce((s, d) => s + d.downloads, 0)
+  const currentMonthDaily = dailyByMonth.get(monthStartKey.slice(0, 7)) ?? 0
 
   const chartCutoffMs = Date.now() - (chartDays + 2) * 86_400_000
   const daily = dailyAll.filter(
@@ -283,7 +308,7 @@ export async function getAppStoreDownloads(
         ? `${errors} report(s) could not be read; totals may be low.`
         : undefined,
     daily,
-    allTime: monthlyTotal + currentMonthDaily,
+    allTime: completeMonthsTotal + currentMonthDaily,
     coverageStart,
   }
 }

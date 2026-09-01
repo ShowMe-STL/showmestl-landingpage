@@ -241,9 +241,13 @@ helpers live in `lib/analytics/shared.ts`.
   Daily reports lag ~1–2 days; each day's fetch is cached 12h. The SALES report
   is per *vendor account*, so rows are filtered to ShowMe STL's Apple ID
   (`6760572115`, overridable via `APP_STORE_CONNECT_APP_APPLE_ID`). All-time
-  downloads = MONTHLY reports for every complete month (from
+  downloads = MONTHLY report per complete month (from
   `APP_STORE_CONNECT_FIRST_MONTH`, default 15 months back) + DAILY for the
-  current partial month; shown as a top-of-Overview count card.
+  current partial month; shown as a top-of-Overview count card. Apple publishes
+  a month's MONTHLY report a few days into the next month, so the daily window
+  also spans the **entire previous month** and any complete month whose MONTHLY
+  report is still missing falls back to its summed dailies — without this the
+  headline total dropped by a month's worth of installs every 1st.
 - **`lib/analytics/ai.ts`** — `getAiAnalytics()`. ShowMe AI adoption from the
   `showme_ai_chats` / `_messages` / `_response_jobs` tables: distinct users,
   messages/user (mean + median), per-day usage, message-count distribution,
