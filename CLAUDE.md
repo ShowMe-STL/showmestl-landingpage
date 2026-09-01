@@ -200,6 +200,13 @@ table). CRUD pages for places/events/playlists/etc. live under
 `app/admin/(dashboard)/`. All server reads use the service-role client
 (`lib/supabase/admin.ts`), which bypasses RLS.
 
+Every dashboard route is a dynamic server component doing its own Supabase
+reads, so each has a `loading.tsx` (skeletons in
+`components/admin-layout/loading-skeletons.tsx`) — without them the router
+sits on the old page with no feedback until the next one is ready, which
+read as needing a double-click. The layout's `requireModerator()` still
+blocks the *first* entry into `/admin`; it doesn't re-run on tab-to-tab nav.
+
 The Places and Events pages (`app/admin/(dashboard)/{places,events}/page.tsx`)
 each show a small "… added per week" `<BarChart>` above the table, bucketed
 by `created_at` week in `America/Chicago`. Both use `CHART_SINCE =
