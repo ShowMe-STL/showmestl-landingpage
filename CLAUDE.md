@@ -202,7 +202,7 @@ table). CRUD pages for places/events/playlists/etc. live under
 
 The Places page (`app/admin/(dashboard)/places/page.tsx`) shows a small
 "Places added per week" `<BarChart>` above the table, bucketed by
-`created_at` week in `America/Chicago`. `CHART_SINCE = '2026-08-10'` drops
+`created_at` week in `America/Chicago`. `CHART_SINCE = '2026-08-17'` drops
 the ~780-row 2026-08-08 seed import (same migration the growth dashboard
 clips); capped at the last 16 weeks.
 

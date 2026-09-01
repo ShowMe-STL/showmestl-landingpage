@@ -4,15 +4,14 @@ import { BarChart } from '@/components/analytics/charts'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
 import { addDays, dayKey, mondayOf } from '@/lib/analytics/shared'
 
 // The 2026-08-08 seed import dropped ~780 places in one day; the chart starts
-// the Monday after so a single spike doesn't flatten every real week.
-const CHART_SINCE = '2026-08-10'
+// well after it so a single spike doesn't flatten every real week.
+const CHART_SINCE = '2026-08-17'
 const MAX_WEEKS = 16
 
 function placesAddedPerWeek(createdAts: string[]) {
@@ -121,10 +120,6 @@ export default async function PlacesPage() {
         <Card className="border-white/10 bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Places added per week</CardTitle>
-            <CardDescription>
-              New place records grouped by the week they were created
-              (America/Chicago). Excludes the initial seed import.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <BarChart data={weeklyAdds} height={180} color="var(--chart-1)" />
