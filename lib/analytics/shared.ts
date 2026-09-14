@@ -37,6 +37,10 @@ export function mondayOf(key: string): string {
   return addDays(key, -dow)
 }
 
+export function currentWeekStart(): string {
+  return mondayOf(dayKey(new Date()))
+}
+
 export function eachDay(from: string, to: string): string[] {
   const out: string[] = []
   for (let k = from; k <= to && out.length < 4000; k = addDays(k, 1)) out.push(k)

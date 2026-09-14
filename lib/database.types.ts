@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -271,6 +271,144 @@ export type Database = {
           },
         ]
       }
+      check_in_link_requests: {
+        Row: {
+          check_in_id: number | null
+          created_at: string
+          place_id: number
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          check_in_id?: number | null
+          created_at?: string
+          place_id: number
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          check_in_id?: number | null
+          created_at?: string
+          place_id?: number
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_link_requests_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_in_link_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_in_live_activities: {
+        Row: {
+          action_ids: string[]
+          activity_id: string
+          bundle_id: string
+          check_in_id: number | null
+          claimed_refresh_revision: number | null
+          claimed_until: string | null
+          created_at: string
+          environment: string
+          expires_at: string
+          last_action_at: string | null
+          last_action_id: string | null
+          last_checked_at: string | null
+          last_push_at: string | null
+          last_push_fingerprint: string | null
+          push_finished_at: string | null
+          push_token: string | null
+          retry_after: string | null
+          revoked_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          action_ids?: string[]
+          activity_id: string
+          bundle_id: string
+          check_in_id?: number | null
+          claimed_refresh_revision?: number | null
+          claimed_until?: string | null
+          created_at?: string
+          environment: string
+          expires_at?: string
+          last_action_at?: string | null
+          last_action_id?: string | null
+          last_checked_at?: string | null
+          last_push_at?: string | null
+          last_push_fingerprint?: string | null
+          push_finished_at?: string | null
+          push_token?: string | null
+          retry_after?: string | null
+          revoked_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          action_ids?: string[]
+          activity_id?: string
+          bundle_id?: string
+          check_in_id?: number | null
+          claimed_refresh_revision?: number | null
+          claimed_until?: string | null
+          created_at?: string
+          environment?: string
+          expires_at?: string
+          last_action_at?: string | null
+          last_action_id?: string | null
+          last_checked_at?: string | null
+          last_push_at?: string | null
+          last_push_fingerprint?: string | null
+          push_finished_at?: string | null
+          push_token?: string | null
+          retry_after?: string | null
+          revoked_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_live_activities_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_in_live_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_in_live_activity_refreshes: {
+        Row: {
+          activity_id: string
+          revision: number
+        }
+        Insert: {
+          activity_id: string
+          revision?: number
+        }
+        Update: {
+          activity_id?: string
+          revision?: number
+        }
+        Relationships: []
+      }
       check_in_participants: {
         Row: {
           check_in_id: number
@@ -309,6 +447,123 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_in_stickers: {
+        Row: {
+          author_id: string
+          check_in_id: number
+          created_at: string
+          id: number
+          position_x: number
+          position_y: number
+          push_notified_at: string | null
+          rotation_degrees: number
+          scale: number
+          sticker_key: string
+        }
+        Insert: {
+          author_id: string
+          check_in_id: number
+          created_at?: string
+          id?: never
+          position_x: number
+          position_y: number
+          push_notified_at?: string | null
+          rotation_degrees: number
+          scale: number
+          sticker_key: string
+        }
+        Update: {
+          author_id?: string
+          check_in_id?: number
+          created_at?: string
+          id?: never
+          position_x?: number
+          position_y?: number
+          push_notified_at?: string | null
+          rotation_degrees?: number
+          scale?: number
+          sticker_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_stickers_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_in_stickers_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "check_ins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      check_in_tags: {
+        Row: {
+          admin_notes: string | null
+          code: string
+          created_at: string
+          default_duration_minutes: number
+          enabled: boolean
+          expires_at: string | null
+          id: string
+          label: string
+          place_id: number | null
+          purpose: string
+          revision: number
+          updated_at: string
+          valid_from: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          code?: string
+          created_at?: string
+          default_duration_minutes?: number
+          enabled?: boolean
+          expires_at?: string | null
+          id?: string
+          label: string
+          place_id?: number | null
+          purpose?: string
+          revision?: number
+          updated_at?: string
+          valid_from?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          code?: string
+          created_at?: string
+          default_duration_minutes?: number
+          enabled?: boolean
+          expires_at?: string | null
+          id?: string
+          label?: string
+          place_id?: number | null
+          purpose?: string
+          revision?: number
+          updated_at?: string
+          valid_from?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_tags_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_in_tags_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places_with_coords"
             referencedColumns: ["id"]
           },
         ]
@@ -391,6 +646,36 @@ export type Database = {
           },
         ]
       }
+      colleges: {
+        Row: {
+          created_at: string
+          id: number
+          is_active: boolean
+          name: string
+          short_name: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          is_active?: boolean
+          name: string
+          short_name: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          is_active?: boolean
+          name?: string
+          short_name?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       crowd_members: {
         Row: {
           created_at: string
@@ -437,14 +722,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          id?: number
+          id?: never
           name: string
           owner_id: string
           updated_at?: string
         }
         Update: {
           created_at?: string
-          id?: number
+          id?: never
           name?: string
           owner_id?: string
           updated_at?: string
@@ -458,6 +743,107 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dev_ideas: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          priority: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: never
+          priority?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: never
+          priority?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dev_task_completions: {
+        Row: {
+          completed_at: string
+          id: number
+          task_id: number
+          week_start: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: never
+          task_id: number
+          week_start: string
+        }
+        Update: {
+          completed_at?: string
+          id?: never
+          task_id?: number
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dev_task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "dev_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dev_tasks: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: number
+          image_url: string | null
+          is_recurring: boolean
+          notes: string | null
+          owner: string | null
+          priority: number | null
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: never
+          image_url?: string | null
+          is_recurring?: boolean
+          notes?: string | null
+          owner?: string | null
+          priority?: number | null
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: never
+          image_url?: string | null
+          is_recurring?: boolean
+          notes?: string | null
+          owner?: string | null
+          priority?: number | null
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       dress_codes: {
         Row: {
@@ -528,6 +914,45 @@ export type Database = {
           },
         ]
       }
+      event_responses: {
+        Row: {
+          created_at: string
+          event_id: number
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: number
+          response: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: number
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_responses_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_responses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string | null
@@ -546,6 +971,7 @@ export type Database = {
           image_source_url: string | null
           image_thumb_url: string | null
           image_url: string | null
+          is_touring_concert: boolean
           location: unknown
           neighborhood_id: number | null
           place_id: number | null
@@ -573,6 +999,7 @@ export type Database = {
           image_source_url?: string | null
           image_thumb_url?: string | null
           image_url?: string | null
+          is_touring_concert?: boolean
           location: unknown
           neighborhood_id?: number | null
           place_id?: number | null
@@ -600,6 +1027,7 @@ export type Database = {
           image_source_url?: string | null
           image_thumb_url?: string | null
           image_url?: string | null
+          is_touring_concert?: boolean
           location?: unknown
           neighborhood_id?: number | null
           place_id?: number | null
@@ -893,6 +1321,48 @@ export type Database = {
           },
         ]
       }
+      mobile_app_releases: {
+        Row: {
+          build_number: string | null
+          bundle_identifier: string
+          created_at: string
+          enabled: boolean
+          id: number
+          marketing_version: string
+          platform: string
+          release_order: number
+          released_at: string
+          store_url: string
+          update_notice_enabled: boolean
+        }
+        Insert: {
+          build_number?: string | null
+          bundle_identifier: string
+          created_at?: string
+          enabled?: boolean
+          id?: never
+          marketing_version: string
+          platform: string
+          release_order: number
+          released_at: string
+          store_url: string
+          update_notice_enabled?: boolean
+        }
+        Update: {
+          build_number?: string | null
+          bundle_identifier?: string
+          created_at?: string
+          enabled?: boolean
+          id?: never
+          marketing_version?: string
+          platform?: string
+          release_order?: number
+          released_at?: string
+          store_url?: string
+          update_notice_enabled?: boolean
+        }
+        Relationships: []
+      }
       moderators: {
         Row: {
           created_at: string
@@ -984,6 +1454,65 @@ export type Database = {
           },
         ]
       }
+      partnership_messages: {
+        Row: {
+          id: number
+          message: string
+          partnership_id: number
+          sent_at: string
+        }
+        Insert: {
+          id?: never
+          message: string
+          partnership_id: number
+          sent_at?: string
+        }
+        Update: {
+          id?: never
+          message?: string
+          partnership_id?: number
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_messages_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnerships: {
+        Row: {
+          contact_info: string | null
+          created_at: string
+          id: number
+          name: string
+          notes: string | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string
+          id?: never
+          name: string
+          notes?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string
+          id?: never
+          name?: string
+          notes?: string | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       place_categories: {
         Row: {
           id: number
@@ -1035,6 +1564,49 @@ export type Database = {
           },
           {
             foreignKeyName: "place_category_assignments_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places_with_coords"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      place_college_assignments: {
+        Row: {
+          college_id: number
+          created_at: string
+          place_id: number
+          sort_order: number
+        }
+        Insert: {
+          college_id: number
+          created_at?: string
+          place_id: number
+          sort_order?: number
+        }
+        Update: {
+          college_id?: number
+          created_at?: string
+          place_id?: number
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_college_assignments_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "place_college_assignments_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "place_college_assignments_place_id_fkey"
             columns: ["place_id"]
             isOneToOne: false
             referencedRelation: "places_with_coords"
@@ -1194,6 +1766,7 @@ export type Database = {
           description: string | null
           featured: boolean
           id: number
+          image_thumb_url: string | null
           image_url: string | null
           name: string
           owner_id: string | null
@@ -1206,6 +1779,7 @@ export type Database = {
           description?: string | null
           featured?: boolean
           id?: never
+          image_thumb_url?: string | null
           image_url?: string | null
           name: string
           owner_id?: string | null
@@ -1218,6 +1792,7 @@ export type Database = {
           description?: string | null
           featured?: boolean
           id?: never
+          image_thumb_url?: string | null
           image_url?: string | null
           name?: string
           owner_id?: string | null
@@ -1270,8 +1845,11 @@ export type Database = {
           avatar_thumb_url: string | null
           avatar_url: string | null
           bio: string | null
+          college_id: number | null
           created_at: string
           display_name: string | null
+          graduation_year: number | null
+          hide_21_plus: boolean
           id: string
           instagram_handle: string | null
           neighborhood_id: number | null
@@ -1283,8 +1861,11 @@ export type Database = {
           avatar_thumb_url?: string | null
           avatar_url?: string | null
           bio?: string | null
+          college_id?: number | null
           created_at?: string
           display_name?: string | null
+          graduation_year?: number | null
+          hide_21_plus?: boolean
           id: string
           instagram_handle?: string | null
           neighborhood_id?: number | null
@@ -1296,8 +1877,11 @@ export type Database = {
           avatar_thumb_url?: string | null
           avatar_url?: string | null
           bio?: string | null
+          college_id?: number | null
           created_at?: string
           display_name?: string | null
+          graduation_year?: number | null
+          hide_21_plus?: boolean
           id?: string
           instagram_handle?: string | null
           neighborhood_id?: number | null
@@ -1305,6 +1889,13 @@ export type Database = {
           username?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_neighborhood_id_fkey"
             columns: ["neighborhood_id"]
@@ -1860,6 +2451,59 @@ export type Database = {
         Args: { p_request_id: number }
         Returns: boolean
       }
+      check_in_from_link: {
+        Args: {
+          requested_duration_minutes: number
+          requested_place_id: number
+          requested_request_id: string
+          requested_visibility: Database["public"]["Enums"]["checkin_visibility"]
+          requested_visible_friend_ids?: string[]
+        }
+        Returns: Json
+      }
+      check_in_live_activity_state: {
+        Args: { requested_activity_id: string }
+        Returns: Json
+      }
+      claim_check_in_live_activity_updates: {
+        Args: never
+        Returns: {
+          action_ids: string[]
+          activity_id: string
+          bundle_id: string
+          check_in_id: number | null
+          claimed_refresh_revision: number | null
+          claimed_until: string | null
+          created_at: string
+          environment: string
+          expires_at: string
+          last_action_at: string | null
+          last_action_id: string | null
+          last_checked_at: string | null
+          last_push_at: string | null
+          last_push_fingerprint: string | null
+          push_finished_at: string | null
+          push_token: string | null
+          retry_after: string | null
+          revoked_at: string | null
+          token_hash: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "check_in_live_activities"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_check_in_live_activity_refresh: {
+        Args: {
+          requested_activity_id: string
+          requested_claimed_until: string
+          requested_succeeded: boolean
+        }
+        Returns: undefined
+      }
       complete_showme_ai_turn: {
         Args: {
           p_cards?: Json
@@ -1883,6 +2527,21 @@ export type Database = {
       }
       create_check_in_comment: {
         Args: { requested_body: string; requested_check_in_id: number }
+        Returns: number
+      }
+      create_check_in_sticker: {
+        Args: {
+          requested_check_in_id: number
+          requested_position_x: number
+          requested_position_y: number
+          requested_rotation_degrees: number
+          requested_scale: number
+          requested_sticker_key: string
+        }
+        Returns: number
+      }
+      create_crowd: {
+        Args: { requested_member_ids: string[]; requested_name: string }
         Returns: number
       }
       create_playlist_with_places: {
@@ -1917,6 +2576,7 @@ export type Database = {
           playlist_title: string
         }[]
       }
+      delete_crowd: { Args: { target_crowd_id: number }; Returns: number }
       delete_own_account: { Args: never; Returns: undefined }
       delete_owned_playlist: {
         Args: { target_playlist_id: number }
@@ -1925,6 +2585,14 @@ export type Database = {
       delete_showme_ai_chat: { Args: { p_chat_id: string }; Returns: boolean }
       disablelongtransactions: { Args: never; Returns: string }
       dismiss_own_notifications: { Args: never; Returns: number }
+      dispatch_check_in_live_activity_updates: {
+        Args: never
+        Returns: undefined
+      }
+      dispatch_pending_check_in_live_activity_updates: {
+        Args: never
+        Returns: undefined
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -2118,6 +2786,13 @@ export type Database = {
           save_count: number
         }[]
       }
+      get_personalized_playlists: {
+        Args: { result_limit?: number }
+        Returns: {
+          playlist_id: number
+          relevance_score: number
+        }[]
+      }
       get_playlist_save_count: {
         Args: { target_playlist_id: number }
         Returns: number
@@ -2167,6 +2842,17 @@ export type Database = {
         Args: { p_chat_id: string; p_request_id: string }
         Returns: string
       }
+      normalize_search_text: { Args: { p_value: string }; Returns: string }
+      perform_check_in_live_activity_action: {
+        Args: {
+          requested_action: string
+          requested_action_id?: string
+          requested_activity_id: string
+          requested_push_token?: string
+          requested_token: string
+        }
+        Returns: Json
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }
@@ -2207,6 +2893,17 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      register_check_in_live_activity: {
+        Args: {
+          requested_activity_id: string
+          requested_bundle_id: string
+          requested_check_in_id: number
+          requested_environment: string
+          requested_push_token?: string
+          requested_token_hash: string
+        }
+        Returns: Json
+      }
       register_own_push_token: {
         Args: {
           p_expo_push_token: string
@@ -2216,6 +2913,15 @@ export type Database = {
         Returns: undefined
       }
       remove_friend: { Args: { p_other_user_id: string }; Returns: boolean }
+      remove_own_check_in_sticker: {
+        Args: { requested_sticker_id: number }
+        Returns: number
+      }
+      resolve_check_in_link: {
+        Args: { requested_place_id: number }
+        Returns: Json
+      }
+      resolve_check_in_tag: { Args: { requested_code: string }; Returns: Json }
       roll_weekly_recurring_events: { Args: never; Returns: number }
       search_check_in_items: {
         Args: {
@@ -2251,6 +2957,7 @@ export type Database = {
         }
         Returns: {
           result_id: number
+          search_score: number
           total_count: number
         }[]
       }
@@ -2273,6 +2980,7 @@ export type Database = {
           image_source_url: string | null
           image_thumb_url: string | null
           image_url: string | null
+          is_touring_concert: boolean
           location: unknown
           neighborhood_id: number | null
           place_id: number | null
@@ -2330,7 +3038,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      search_text_score: {
+        Args: { p_candidate: string; p_query: string }
+        Returns: number
+      }
       send_friend_request: { Args: { p_addressee_id: string }; Returns: number }
+      set_event_response: {
+        Args: { next_response: string; target_event_id: number }
+        Returns: string
+      }
       set_home_trending_status: {
         Args: {
           next_trending_status: boolean
@@ -2987,6 +3703,14 @@ export type Database = {
         }
         Returns: Json
       }
+      update_crowd: {
+        Args: {
+          requested_member_ids: string[]
+          requested_name: string
+          target_crowd_id: number
+        }
+        Returns: number
+      }
       update_event_media: {
         Args: {
           next_image_thumb_url: string
@@ -3003,17 +3727,22 @@ export type Database = {
         Args: {
           profile_avatar_thumb_url?: string
           profile_avatar_url?: string
+          profile_college_id?: number
           profile_display_name: string
+          profile_graduation_year?: number
+          profile_hide_21_plus?: boolean
           profile_instagram_handle: string
           profile_interest_ids: number[]
           profile_neighborhood_id: number
           profile_privacy_state: Database["public"]["Enums"]["privacy_state"]
           replace_profile_avatar?: boolean
+          replace_profile_college?: boolean
         }
         Returns: Json
       }
       update_playlist_with_places: {
         Args: {
+          next_image_thumb_url?: string
           next_image_url?: string
           playlist_description: string
           playlist_name: string
@@ -3063,12 +3792,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3092,11 +3821,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3117,11 +3846,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3142,11 +3871,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -3159,11 +3888,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
