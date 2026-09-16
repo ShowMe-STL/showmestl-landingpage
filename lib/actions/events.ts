@@ -144,3 +144,61 @@ export async function deleteEvent(id: number) {
   if (error) return { error: error.message }
   revalidatePath('/events')
 }
+
+export type DuplicateMatch = {
+  id: number
+  title: string
+  start_time: string
+  venue_name: string | null
+  place_id: number | null
+  website: string | null
+}
+
+export async function checkEventDuplicates(input: {
+  title: string
+  start_time: string
+  place_id: number | null
+  venue_name: string | null
+  excludeId?: number
+}): Promise<{ duplicates: DuplicateMatch[] }> {
+  await requireModerator()
+
+  const title = input.title.trim().toLowerCase()
+  if (!title || !input.start_time) return { duplicates: [] }
+
+  const eventDate = input.start_time.split('T')[0]
+
+  const supabase = createAdminClient()
+
+  const { data: events } = await supabase
+    .from('events')
+    .select('id, title, start_time, venue_name, place_id, website')
+    .gte('start_time', `${eventDate}T00:00:00`)
+    .lt('start_time', `${eventDate}T23:59:59`)
+
+  if (!events || events.length === 0) return { duplicates: [] }
+
+  const duplicates: DuplicateMatch[] = []
+
+  for (const event of events) {
+    if (input.excludeId && event.id === input.excludeId) continue
+
+    const eventTitle = (event.title || '').trim().toLowerCase()
+    const titlesMatch = eventTitle === title ||
+      eventTitle.includes(title) ||
+      title.includes(eventTitle)
+
+    if (!titlesMatch) continue
+
+    const venuesMatch =
+      (input.place_id && event.place_id && input.place_id === event.place_id) ||
+      (input.venue_name && event.venue_name &&
+        input.venue_name.trim().toLowerCase() === event.venue_name.trim().toLowerCase())
+
+    if (venuesMatch) {
+      duplicates.push(event)
+    }
+  }
+
+  return { duplicates }
+}
