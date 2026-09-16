@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, ExternalLink } from 'lucide-react'
+import { Plus, Pencil, ExternalLink, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +11,8 @@ import { ConfirmDeleteButton } from '@/components/confirm-delete-button'
 import { TrendingSwitch } from '@/components/trending-switch'
 import { deleteEvent } from '@/lib/actions/events'
 import { EventDialog } from './event-dialog'
+import { ImportEventsDialog } from './import-events-dialog'
+import { QuickEditPopover } from './quick-edit-popover'
 
 export type EventRow = {
   id: number
@@ -54,6 +56,7 @@ export function EventsManager({
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [editing, setEditing] = useState<EventRow | null>(null)
 
   const categoryNames = useMemo(() => {
@@ -147,6 +150,17 @@ export function EventsManager({
           </a>
         ) : null,
     },
+    {
+      key: 'quick_edit',
+      header: 'Quick Edit',
+      className: 'w-28',
+      render: (e) => (
+        <QuickEditPopover
+          event={e}
+          onSaved={() => router.refresh()}
+        />
+      ),
+    },
   ]
 
   return (
@@ -158,10 +172,16 @@ export function EventsManager({
           onChange={(e) => setQuery(e.target.value)}
           className="max-w-xs"
         />
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add event
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Import
+          </Button>
+          <Button onClick={openCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add event
+          </Button>
+        </div>
       </div>
 
       <DataTable
@@ -196,6 +216,12 @@ export function EventsManager({
         dressCodes={dressCodes}
         places={places}
         onSaved={() => router.refresh()}
+      />
+
+      <ImportEventsDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImported={() => router.refresh()}
       />
     </div>
   )

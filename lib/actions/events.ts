@@ -145,6 +145,29 @@ export async function deleteEvent(id: number) {
   revalidatePath('/events')
 }
 
+export type QuickUpdateInput = {
+  website: string | null
+  image_url: string | null
+  image_thumb_url: string | null
+}
+
+export async function quickUpdateEvent(id: number, input: QuickUpdateInput) {
+  await requireModerator()
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('events')
+    .update({
+      website: input.website,
+      image_url: input.image_url,
+      image_thumb_url: input.image_thumb_url,
+    })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath('/events')
+}
+
 export type DuplicateMatch = {
   id: number
   title: string
