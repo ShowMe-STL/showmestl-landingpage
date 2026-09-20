@@ -504,6 +504,24 @@ export function GrowthDashboard({
               ]}
             />
           </Panel>
+
+          <Panel
+            title="Cumulative check-ins"
+            hint={`Total check-ins since v2 launch (${fmtDay(analytics.coverage.signupsFrom)}).`}
+            info={`Running total of all check-ins (places and events combined) since v2 launch on ${fmtDay(analytics.coverage.signupsFrom)}. This tracks overall engagement — how often users are sharing where they are.`}
+          >
+            <LineChart
+              data={inRange(analytics.checkIns)}
+              series={[
+                {
+                  key: 'cumulative',
+                  label: 'Total check-ins',
+                  color: 'var(--chart-2)',
+                  area: true,
+                },
+              ]}
+            />
+          </Panel>
         </TabsContent>
 
         {/* ---- Active users --------------------------------------- */}
