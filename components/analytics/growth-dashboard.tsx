@@ -522,6 +522,24 @@ export function GrowthDashboard({
               ]}
             />
           </Panel>
+
+          <Panel
+            title="Check-ins by day"
+            hint="Daily check-in counts (places and events combined)."
+            info={`Number of check-ins each day since v2 launch on ${fmtDay(analytics.coverage.signupsFrom)}. Shows day-to-day engagement patterns — spikes often correlate with weekends or local events.`}
+          >
+            <LineChart
+              data={inRange(analytics.checkIns)}
+              series={[
+                {
+                  key: 'count',
+                  label: 'Check-ins',
+                  color: 'var(--chart-1)',
+                  area: true,
+                },
+              ]}
+            />
+          </Panel>
         </TabsContent>
 
         {/* ---- Active users --------------------------------------- */}
