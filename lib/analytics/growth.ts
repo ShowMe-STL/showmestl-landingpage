@@ -59,8 +59,10 @@ export type GrowthAnalytics = {
     users: number
     activatedUsers: number
     activationRate: number
+    totalCheckIns: number
   }
   signups: { day: string; count: number; cumulative: number }[]
+  checkIns: { day: string; count: number; cumulative: number }[]
   activation: {
     byAction: {
       type: ActionType
@@ -230,6 +232,23 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
     cumulative += count
     return { day, count, cumulative }
   })
+
+  // ---- Check-ins (cumulative since v2 launch) -----------------------------
+  const checkInCounts = new Map<string, number>()
+  for (const r of checkInRows) {
+    const day = dayKey(r.started_at)
+    checkInCounts.set(day, (checkInCounts.get(day) ?? 0) + 1)
+  }
+  let checkInCumulative = 0
+  for (const day of checkInCounts.keys()) {
+    if (day < timelineStart) checkInCumulative += checkInCounts.get(day) ?? 0
+  }
+  const checkIns = eachDay(timelineStart, today).map((day) => {
+    const count = checkInCounts.get(day) ?? 0
+    checkInCumulative += count
+    return { day, count, cumulative: checkInCumulative }
+  })
+  const totalCheckIns = checkInRows.length
 
   // ---- Per-user event index ----------------------------------------------
   type PerUser = { all: Ev[]; first7: Ev[] }
@@ -440,8 +459,10 @@ export async function getGrowthAnalytics(): Promise<GrowthAnalytics> {
       users: totalUsers,
       activatedUsers,
       activationRate: totalUsers ? activatedUsers / totalUsers : 0,
+      totalCheckIns,
     },
     signups,
+    checkIns,
     activation: {
       byAction,
       firstWeek: {
