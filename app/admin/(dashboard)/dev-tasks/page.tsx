@@ -11,7 +11,7 @@ export default async function DevTasksPage() {
       supabase
         .from('dev_tasks')
         .select(
-          'id, title, notes, status, owner, due_date, image_url, sort_order, is_recurring, priority',
+          'id, title, notes, status, owner, due_date, image_url, sort_order, is_recurring, priority, is_archived',
         )
         .order('sort_order'),
       supabase
