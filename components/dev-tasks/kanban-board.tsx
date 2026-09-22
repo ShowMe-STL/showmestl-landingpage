@@ -12,11 +12,11 @@ import {
   ArchiveRestore,
   ChevronDown,
   Filter,
+  Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -64,10 +64,12 @@ export type TaskRow = {
   is_recurring: boolean
   priority: number | null
   is_archived?: boolean
+  updated_at?: string
 }
 
 const NONE = '__none__'
 const ALL = '__all__'
+const ALL_WEEKS = '__all_weeks__'
 
 const COLUMNS: {
   status: TaskStatus
@@ -82,20 +84,30 @@ const COLUMNS: {
 
 const OWNERS: TaskOwner[] = ['Jack', 'Izayah', 'Alec']
 
-function getWeekLabel(dateStr: string | null): string {
-  if (!dateStr) return 'No due date'
-  const date = new Date(`${dateStr}T00:00:00`)
-  const now = new Date()
-  const startOfWeek = (d: Date) => {
-    const day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-    return new Date(d.setDate(diff))
-  }
-  const taskWeekStart = startOfWeek(new Date(date))
-  const currentWeekStart = startOfWeek(new Date(now))
-  const diffWeeks = Math.round(
-    (taskWeekStart.getTime() - currentWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
-  )
+function getMondayOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function getWeekKey(dateStr: string | null | undefined): string | null {
+  if (!dateStr) return null
+  const date = dateStr.includes('T')
+    ? new Date(dateStr)
+    : new Date(`${dateStr}T00:00:00`)
+  const monday = getMondayOfWeek(date)
+  return monday.toISOString().split('T')[0]
+}
+
+function getWeekLabel(weekKey: string): string {
+  const weekDate = new Date(`${weekKey}T00:00:00`)
+  const currentMonday = getMondayOfWeek(new Date())
+  const diffMs = weekDate.getTime() - currentMonday.getTime()
+  const diffWeeks = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000))
+
   if (diffWeeks === 0) return 'This week'
   if (diffWeeks === 1) return 'Next week'
   if (diffWeeks === -1) return 'Last week'
@@ -103,9 +115,11 @@ function getWeekLabel(dateStr: string | null): string {
   return `In ${diffWeeks} weeks`
 }
 
-function getWeekSortKey(dateStr: string | null): number {
-  if (!dateStr) return Number.MAX_SAFE_INTEGER
-  return new Date(`${dateStr}T00:00:00`).getTime()
+function getTaskWeekKey(task: TaskRow): string | null {
+  if (task.status === 'done') {
+    return getWeekKey(task.updated_at)
+  }
+  return getWeekKey(task.due_date)
 }
 
 const OWNER_COLORS: Record<TaskOwner, string> = {
@@ -175,17 +189,41 @@ export function KanbanBoard({
   const [isPending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [ownerFilter, setOwnerFilter] = useState<string>(ALL)
+  const [weekFilter, setWeekFilter] = useState<string>(ALL_WEEKS)
   const [showArchive, setShowArchive] = useState(false)
 
   const activeTasks = tasks.filter((t) => !t.is_archived)
   const archivedTasks = tasks.filter((t) => t.is_archived)
 
-  const filteredTasks =
+  const weekOptions = (() => {
+    const weeks = new Set<string>()
+    const currentMonday = getMondayOfWeek(new Date())
+    weeks.add(currentMonday.toISOString().split('T')[0])
+
+    for (const task of activeTasks) {
+      const weekKey = getTaskWeekKey(task)
+      if (weekKey) weeks.add(weekKey)
+    }
+
+    return Array.from(weeks)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+      .slice(0, 8)
+  })()
+
+  const filteredByOwner =
     ownerFilter === ALL
       ? activeTasks
       : ownerFilter === NONE
         ? activeTasks.filter((t) => !t.owner)
         : activeTasks.filter((t) => t.owner === ownerFilter)
+
+  const filteredTasks =
+    weekFilter === ALL_WEEKS
+      ? filteredByOwner
+      : filteredByOwner.filter((t) => {
+          const taskWeek = getTaskWeekKey(t)
+          return taskWeek === weekFilter
+        })
 
   const recurringTasks = filteredTasks.filter((t) => t.is_recurring)
   const boardTasks = filteredTasks.filter((t) => !t.is_recurring)
@@ -358,12 +396,42 @@ export function KanbanBoard({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-zinc-900/50 p-1">
+          <button
+            type="button"
+            onClick={() => setWeekFilter(ALL_WEEKS)}
+            className={cn(
+              'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              weekFilter === ALL_WEEKS
+                ? 'bg-zinc-800 text-white'
+                : 'text-zinc-400 hover:text-zinc-200',
+            )}
+          >
+            All weeks
+          </button>
+          {weekOptions.map((weekKey) => (
+            <button
+              key={weekKey}
+              type="button"
+              onClick={() => setWeekFilter(weekKey)}
+              className={cn(
+                'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                weekFilter === weekKey
+                  ? 'bg-zinc-800 text-white'
+                  : 'text-zinc-400 hover:text-zinc-200',
+              )}
+            >
+              {getWeekLabel(weekKey)}
+            </button>
+          ))}
+        </div>
+
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-muted-foreground" />
           <Select value={ownerFilter} onValueChange={(v) => v && setOwnerFilter(v)}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by person" />
+            <SelectTrigger className="h-8 w-36 border-zinc-700 bg-zinc-900/50 text-sm">
+              <Filter className="mr-1.5 h-3.5 w-3.5 text-zinc-500" />
+              <SelectValue placeholder="Person" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>All people</SelectItem>
@@ -375,17 +443,17 @@ export function KanbanBoard({
               ))}
             </SelectContent>
           </Select>
+          {ownerFilter !== ALL && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setOwnerFilter(ALL)}
+              className="h-8 text-xs text-zinc-500 hover:text-zinc-300"
+            >
+              Clear
+            </Button>
+          )}
         </div>
-        {ownerFilter !== ALL && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setOwnerFilter(ALL)}
-            className="text-muted-foreground"
-          >
-            Clear filter
-          </Button>
-        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -557,111 +625,122 @@ export function KanbanBoard({
         </DialogContent>
       </Dialog>
 
-      <Card>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-              <Repeat className="h-3.5 w-3.5" />
-              This week
-            </h3>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={openCreateRecurring}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          {recurringTasks.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No standing weekly tasks yet.
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {recurringTasks.map((task) => {
-                const done = completedIds.has(task.id)
-                return (
-                  <li
-                    key={task.id}
-                    className="flex items-center gap-2 rounded-lg border px-2.5 py-2"
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-sm font-medium text-zinc-300">
+            <Repeat className="h-4 w-4 text-zinc-500" />
+            Recurring tasks
+            <span className="text-zinc-500">{recurringTasks.length}</span>
+          </h3>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-6 w-6 text-zinc-500 hover:text-zinc-300"
+            onClick={openCreateRecurring}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        {recurringTasks.length === 0 ? (
+          <p className="py-2 text-xs text-zinc-600">
+            No standing weekly tasks yet.
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {recurringTasks.map((task) => {
+              const done = completedIds.has(task.id)
+              return (
+                <div
+                  key={task.id}
+                  className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-zinc-800/50"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleWeeklyCompletion(task, !done)}
+                    className={cn(
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                      done
+                        ? 'border-emerald-500 bg-emerald-500'
+                        : 'border-zinc-600 hover:border-zinc-400',
+                    )}
                   >
-                    <Checkbox
-                      checked={done}
-                      onCheckedChange={(checked) =>
-                        toggleWeeklyCompletion(task, checked === true)
-                      }
-                    />
-                    <span
-                      className={`flex-1 text-sm ${done ? 'text-muted-foreground line-through' : ''}`}
-                    >
-                      {task.title}
-                    </span>
-                    {task.owner ? <OwnerAvatar owner={task.owner} /> : null}
+                    {done && (
+                      <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </button>
+                  <span
+                    className={cn(
+                      'flex-1 text-sm',
+                      done ? 'text-zinc-500 line-through' : 'text-zinc-300',
+                    )}
+                  >
+                    {task.title}
+                  </span>
+                  {task.owner && <OwnerAvatar owner={task.owner} />}
+                  <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="h-5 w-5 text-zinc-500 hover:text-zinc-300"
                       onClick={() => openEdit(task)}
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Pencil className="h-3 w-3" />
                     </Button>
                     <ConfirmDeleteButton
                       title="Delete this weekly task?"
                       description={`"${task.title}" will be permanently removed.`}
                       action={() => handleDelete(task.id)}
                     />
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
         {COLUMNS.map((column) => {
           const columnTasks = boardTasks
             .filter((t) => t.status === column.status)
-            .sort((a, b) => {
-              const weekA = getWeekSortKey(a.due_date)
-              const weekB = getWeekSortKey(b.due_date)
-              if (weekA !== weekB) return weekA - weekB
-              return a.sort_order - b.sort_order
-            })
-
-          const groupedByWeek = columnTasks.reduce(
-            (acc, task) => {
-              const week = getWeekLabel(task.due_date)
-              if (!acc[week]) acc[week] = []
-              acc[week].push(task)
-              return acc
-            },
-            {} as Record<string, TaskRow[]>,
-          )
-
-          const weekOrder = Object.keys(groupedByWeek).sort((a, b) => {
-            const first = groupedByWeek[a][0]
-            const second = groupedByWeek[b][0]
-            return getWeekSortKey(first.due_date) - getWeekSortKey(second.due_date)
-          })
+            .sort((a, b) => a.sort_order - b.sort_order)
 
           const isDragOver = dragOverStatus === column.status
 
           return (
             <div
               key={column.status}
-              className="w-[85vw] shrink-0 snap-start space-y-3 sm:w-72"
+              className="w-[85vw] shrink-0 snap-start sm:w-72"
             >
-              <div className="flex items-center justify-between px-0.5">
-                <h3 className="flex items-center gap-2 text-sm font-semibold">
-                  <span className={cn('h-2 w-2 rounded-full', column.dot)} />
-                  {column.label}
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1 text-xs font-medium text-muted-foreground">
+              <div className="mb-2 flex items-center justify-between rounded-lg bg-zinc-900/60 px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      'flex h-4 w-4 items-center justify-center rounded-full border-2',
+                      column.status === 'todo' && 'border-zinc-500',
+                      column.status === 'in_progress' && 'border-sky-500 bg-sky-500/20',
+                      column.status === 'done' && 'border-emerald-500 bg-emerald-500',
+                    )}
+                  >
+                    {column.status === 'done' && (
+                      <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </span>
+                  <span className="text-sm font-medium text-zinc-300">
+                    {column.label}
+                  </span>
+                  <span className="text-sm text-zinc-500">
                     {columnTasks.length}
                   </span>
-                </h3>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon-sm"
+                  className="h-6 w-6 text-zinc-500 hover:text-zinc-300"
                   onClick={() => openCreate(column.status)}
                 >
                   <Plus className="h-4 w-4" />
@@ -680,137 +759,137 @@ export function KanbanBoard({
                 }
                 onDrop={() => handleDrop(column.status)}
                 className={cn(
-                  'min-h-24 space-y-2 rounded-xl border border-dashed p-2 transition-colors',
-                  isDragOver ? column.drop : 'border-border/60',
+                  'min-h-32 space-y-2 rounded-lg p-1.5 transition-colors',
+                  isDragOver ? 'bg-zinc-800/50' : 'bg-transparent',
                 )}
               >
-                {weekOrder.map((weekLabel) => (
-                  <div key={weekLabel} className="space-y-2">
-                    {weekOrder.length > 1 && (
-                      <div className="flex items-center gap-2 px-1 pt-1">
-                        <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-                          {weekLabel}
-                        </span>
-                        <div className="h-px flex-1 bg-border/50" />
+                {columnTasks.map((task) => {
+                  const priority =
+                    task.priority !== null
+                      ? PRIORITY_META[task.priority as TaskPriority]
+                      : null
+                  const isDone = task.status === 'done'
+                  const taskWeek = getWeekKey(task.due_date)
+                  const weekLabel = taskWeek ? getWeekLabel(taskWeek) : null
+
+                  return (
+                    <div
+                      key={task.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedId(task.id)
+                        e.dataTransfer.effectAllowed = 'move'
+                      }}
+                      onDragEnd={() => {
+                        setDraggedId(null)
+                        setDragOverStatus(null)
+                      }}
+                      className={cn(
+                        'group cursor-grab rounded-lg border border-zinc-800 bg-zinc-900/80 p-3 transition-all hover:border-zinc-700 hover:bg-zinc-900 active:cursor-grabbing',
+                        draggedId === task.id && 'opacity-50',
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => !isDone && handleMarkDone(task)}
+                            className={cn(
+                              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+                              isDone
+                                ? 'border-emerald-500 bg-emerald-500'
+                                : 'border-zinc-600 hover:border-zinc-400',
+                            )}
+                            title={isDone ? 'Done' : 'Mark as done'}
+                          >
+                            {isDone && (
+                              <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </button>
+                          <span className="text-sm font-medium text-zinc-200 leading-snug">
+                            {task.title}
+                          </span>
+                        </div>
+                        {task.owner && <OwnerAvatar owner={task.owner} />}
                       </div>
-                    )}
-                    {groupedByWeek[weekLabel].map((task) => {
-                      const priority =
-                        task.priority !== null
-                          ? PRIORITY_META[task.priority as TaskPriority]
-                          : null
-                      const isDone = task.status === 'done'
-                      return (
-                        <Card
-                          key={task.id}
-                          draggable
-                          onDragStart={(e) => {
-                            setDraggedId(task.id)
-                            e.dataTransfer.effectAllowed = 'move'
-                          }}
-                          onDragEnd={() => {
-                            setDraggedId(null)
-                            setDragOverStatus(null)
-                          }}
-                          className={cn(
-                            'cursor-grab gap-3 py-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing',
-                            draggedId === task.id && 'opacity-50',
-                          )}
-                        >
-                          {task.image_url ? (
-                            <div className="relative -mt-3 h-28 w-full overflow-hidden">
-                              <Image
-                                src={task.image_url}
-                                alt=""
-                                fill
-                                className="object-cover"
-                                unoptimized
-                              />
-                            </div>
-                          ) : null}
-                          <CardContent className="flex flex-col gap-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                {!isDone && (
-                                  <Checkbox
-                                    checked={false}
-                                    onCheckedChange={() => handleMarkDone(task)}
-                                    title="Mark as done"
-                                  />
-                                )}
-                                {priority ? (
-                                  <span
-                                    className={cn(
-                                      'rounded-full px-2 py-0.5 text-[0.65rem] font-semibold',
-                                      priority.className,
-                                    )}
-                                  >
-                                    {priority.label}
-                                  </span>
-                                ) : null}
-                              </div>
-                              <div className="flex shrink-0 gap-0.5">
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => handleArchive(task, true)}
-                                  title="Archive task"
-                                >
-                                  <Archive className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  onClick={() => openEdit(task)}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" />
-                                </Button>
-                                <ConfirmDeleteButton
-                                  title="Delete this task?"
-                                  description={`"${task.title}" will be permanently removed.`}
-                                  action={() => handleDelete(task.id)}
-                                />
-                              </div>
-                            </div>
-                            <p className="text-sm font-medium leading-snug">
-                              {task.title}
-                            </p>
-                            {task.notes ? (
-                              <p className="line-clamp-2 text-xs text-muted-foreground">
-                                {task.notes}
-                              </p>
-                            ) : null}
-                            {task.owner || task.due_date ? (
-                              <div className="flex items-center justify-between border-t pt-2">
-                                {task.owner ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <OwnerAvatar owner={task.owner} />
-                                    <span className="text-xs text-muted-foreground">
-                                      {task.owner}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <span />
-                                )}
-                                {task.due_date ? (
-                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Flag className="h-3 w-3" />
-                                    {formatDueDate(task.due_date)}
-                                  </span>
-                                ) : null}
-                              </div>
-                            ) : null}
-                          </CardContent>
-                        </Card>
-                      )
-                    })}
-                  </div>
-                ))}
-                {columnTasks.length === 0 ? (
-                  <p className="p-2 text-center text-xs text-muted-foreground">
-                    Drag tasks here or tap + to add one.
+
+                      {task.notes && (
+                        <p className="mt-1.5 line-clamp-2 pl-6 text-xs text-zinc-500">
+                          {task.notes}
+                        </p>
+                      )}
+
+                      <div className="mt-2 flex items-center gap-2 pl-6">
+                        {priority && (
+                          <span
+                            className={cn(
+                              'rounded px-1.5 py-0.5 text-[0.65rem] font-medium',
+                              priority.className,
+                            )}
+                          >
+                            {priority.label}
+                          </span>
+                        )}
+                        {weekLabel && weekFilter === ALL_WEEKS && (
+                          <span className="flex items-center gap-1 text-[0.65rem] text-zinc-500">
+                            <Calendar className="h-3 w-3" />
+                            {weekLabel}
+                          </span>
+                        )}
+                        {task.due_date && (
+                          <span className="text-[0.65rem] text-zinc-500">
+                            {formatDueDate(task.due_date)}
+                          </span>
+                        )}
+                        <div className="ml-auto flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-5 w-5 text-zinc-500 hover:text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleArchive(task, true)
+                            }}
+                            title="Archive"
+                          >
+                            <Archive className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-5 w-5 text-zinc-500 hover:text-zinc-300"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openEdit(task)
+                            }}
+                            title="Edit"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {task.image_url && (
+                        <div className="relative mt-2 h-24 w-full overflow-hidden rounded-md">
+                          <Image
+                            src={task.image_url}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {columnTasks.length === 0 && (
+                  <p className="py-8 text-center text-xs text-zinc-600">
+                    No tasks
                   </p>
-                ) : null}
+                )}
               </div>
             </div>
           )
@@ -818,74 +897,75 @@ export function KanbanBoard({
       </div>
 
       {archivedTasks.length > 0 && (
-        <Card className="mt-6">
-          <CardContent className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setShowArchive(!showArchive)}
-              className="flex w-full items-center justify-between"
-            >
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                <Archive className="h-3.5 w-3.5" />
-                Archived
-                <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1 text-xs font-medium">
-                  {archivedTasks.length}
-                </span>
-              </h3>
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 text-muted-foreground transition-transform',
-                  showArchive && 'rotate-180',
-                )}
-              />
-            </button>
-            {showArchive && (
-              <ul className="space-y-1.5">
-                {archivedTasks.map((task) => (
-                  <li
-                    key={task.id}
-                    className="flex items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 opacity-70"
+        <div className="mt-4 rounded-lg border border-zinc-800/50 bg-zinc-900/30">
+          <button
+            type="button"
+            onClick={() => setShowArchive(!showArchive)}
+            className="flex w-full items-center justify-between px-3 py-2"
+          >
+            <span className="flex items-center gap-2 text-sm text-zinc-500">
+              <Archive className="h-4 w-4" />
+              Archived
+              <span className="text-zinc-600">{archivedTasks.length}</span>
+            </span>
+            <ChevronDown
+              className={cn(
+                'h-4 w-4 text-zinc-600 transition-transform',
+                showArchive && 'rotate-180',
+              )}
+            />
+          </button>
+          {showArchive && (
+            <div className="space-y-1 border-t border-zinc-800/50 p-2">
+              {archivedTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="group flex items-center gap-2 rounded-md px-2 py-1.5 opacity-60 hover:bg-zinc-800/30 hover:opacity-80"
+                >
+                  <span className="flex-1 text-sm text-zinc-500">
+                    {task.title}
+                  </span>
+                  {task.owner && <OwnerAvatar owner={task.owner} />}
+                  <span
+                    className={cn(
+                      'rounded px-1.5 py-0.5 text-[0.6rem] font-medium',
+                      task.status === 'todo' && 'bg-zinc-800 text-zinc-400',
+                      task.status === 'in_progress' && 'bg-sky-900/50 text-sky-400',
+                      task.status === 'done' && 'bg-emerald-900/50 text-emerald-400',
+                    )}
                   >
-                    <span className="flex-1 text-sm text-muted-foreground">
-                      {task.title}
-                    </span>
-                    {task.owner ? <OwnerAvatar owner={task.owner} /> : null}
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[0.6rem] font-medium',
-                        COLUMNS.find((c) => c.status === task.status)?.dot
-                          .replace('bg-', 'bg-opacity-20 text-')
-                          .replace('-400', '-300') ?? 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {COLUMNS.find((c) => c.status === task.status)?.label}
-                    </span>
+                    {COLUMNS.find((c) => c.status === task.status)?.label}
+                  </span>
+                  <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="h-5 w-5 text-zinc-500 hover:text-zinc-300"
                       onClick={() => handleArchive(task, false)}
-                      title="Restore task"
+                      title="Restore"
                     >
-                      <ArchiveRestore className="h-3.5 w-3.5" />
+                      <ArchiveRestore className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      className="h-5 w-5 text-zinc-500 hover:text-zinc-300"
                       onClick={() => openEdit(task)}
+                      title="Edit"
                     >
-                      <Pencil className="h-3.5 w-3.5" />
+                      <Pencil className="h-3 w-3" />
                     </Button>
                     <ConfirmDeleteButton
                       title="Delete this archived task?"
                       description={`"${task.title}" will be permanently removed.`}
                       action={() => handleDelete(task.id)}
                     />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
