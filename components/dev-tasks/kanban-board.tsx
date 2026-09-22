@@ -2,7 +2,17 @@
 
 import { useRef, useState, useTransition, type FormEvent } from 'react'
 import Image from 'next/image'
-import { Plus, Pencil, ImagePlus, Repeat, Flag } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  ImagePlus,
+  Repeat,
+  Flag,
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
+  Filter,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -34,6 +44,8 @@ import {
   moveTask,
   uploadTaskImage,
   setWeeklyCompletion,
+  archiveTask,
+  markTaskDone,
   type TaskInput,
   type TaskOwner,
   type TaskPriority,
@@ -51,9 +63,11 @@ export type TaskRow = {
   sort_order: number
   is_recurring: boolean
   priority: number | null
+  is_archived?: boolean
 }
 
 const NONE = '__none__'
+const ALL = '__all__'
 
 const COLUMNS: {
   status: TaskStatus
@@ -67,6 +81,32 @@ const COLUMNS: {
 ]
 
 const OWNERS: TaskOwner[] = ['Jack', 'Izayah', 'Alec']
+
+function getWeekLabel(dateStr: string | null): string {
+  if (!dateStr) return 'No due date'
+  const date = new Date(`${dateStr}T00:00:00`)
+  const now = new Date()
+  const startOfWeek = (d: Date) => {
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    return new Date(d.setDate(diff))
+  }
+  const taskWeekStart = startOfWeek(new Date(date))
+  const currentWeekStart = startOfWeek(new Date(now))
+  const diffWeeks = Math.round(
+    (taskWeekStart.getTime() - currentWeekStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
+  )
+  if (diffWeeks === 0) return 'This week'
+  if (diffWeeks === 1) return 'Next week'
+  if (diffWeeks === -1) return 'Last week'
+  if (diffWeeks < 0) return `${Math.abs(diffWeeks)} weeks ago`
+  return `In ${diffWeeks} weeks`
+}
+
+function getWeekSortKey(dateStr: string | null): number {
+  if (!dateStr) return Number.MAX_SAFE_INTEGER
+  return new Date(`${dateStr}T00:00:00`).getTime()
+}
 
 const OWNER_COLORS: Record<TaskOwner, string> = {
   Jack: 'bg-violet-500/20 text-violet-300',
@@ -134,9 +174,21 @@ export function KanbanBoard({
   const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null)
   const [isPending, startTransition] = useTransition()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [ownerFilter, setOwnerFilter] = useState<string>(ALL)
+  const [showArchive, setShowArchive] = useState(false)
 
-  const recurringTasks = tasks.filter((t) => t.is_recurring)
-  const boardTasks = tasks.filter((t) => !t.is_recurring)
+  const activeTasks = tasks.filter((t) => !t.is_archived)
+  const archivedTasks = tasks.filter((t) => t.is_archived)
+
+  const filteredTasks =
+    ownerFilter === ALL
+      ? activeTasks
+      : ownerFilter === NONE
+        ? activeTasks.filter((t) => !t.owner)
+        : activeTasks.filter((t) => t.owner === ownerFilter)
+
+  const recurringTasks = filteredTasks.filter((t) => t.is_recurring)
+  const boardTasks = filteredTasks.filter((t) => !t.is_recurring)
 
   function openCreate(status: TaskStatus) {
     setEditing(null)
@@ -182,6 +234,42 @@ export function KanbanBoard({
       const result = await setWeeklyCompletion(task.id, completed)
       if (result && 'error' in result && result.error) {
         toast.error(result.error)
+      }
+    })
+  }
+
+  function handleArchive(task: TaskRow, archived: boolean) {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, is_archived: archived } : t)),
+    )
+    startTransition(async () => {
+      const result = await archiveTask(task.id, archived)
+      if (result && 'error' in result && result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(archived ? 'Task archived.' : 'Task restored.')
+      }
+    })
+  }
+
+  function handleMarkDone(task: TaskRow) {
+    if (task.status === 'done') return
+    const newSortOrder = tasks.filter(
+      (t) => t.status === 'done' && !t.is_archived,
+    ).length
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? { ...t, status: 'done', sort_order: newSortOrder }
+          : t,
+      ),
+    )
+    startTransition(async () => {
+      const result = await markTaskDone(task.id)
+      if (result && 'error' in result && result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success('Task marked as done.')
       }
     })
   }
@@ -270,6 +358,36 @@ export function KanbanBoard({
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={ownerFilter} onValueChange={(v) => v && setOwnerFilter(v)}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Filter by person" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All people</SelectItem>
+              <SelectItem value={NONE}>Unassigned</SelectItem>
+              {OWNERS.map((owner) => (
+                <SelectItem key={owner} value={owner}>
+                  {owner}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {ownerFilter !== ALL && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setOwnerFilter(ALL)}
+            className="text-muted-foreground"
+          >
+            Clear filter
+          </Button>
+        )}
+      </div>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <form onSubmit={handleSubmit}>
@@ -501,9 +619,31 @@ export function KanbanBoard({
 
       <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
         {COLUMNS.map((column) => {
-          const items = boardTasks
+          const columnTasks = boardTasks
             .filter((t) => t.status === column.status)
-            .sort((a, b) => a.sort_order - b.sort_order)
+            .sort((a, b) => {
+              const weekA = getWeekSortKey(a.due_date)
+              const weekB = getWeekSortKey(b.due_date)
+              if (weekA !== weekB) return weekA - weekB
+              return a.sort_order - b.sort_order
+            })
+
+          const groupedByWeek = columnTasks.reduce(
+            (acc, task) => {
+              const week = getWeekLabel(task.due_date)
+              if (!acc[week]) acc[week] = []
+              acc[week].push(task)
+              return acc
+            },
+            {} as Record<string, TaskRow[]>,
+          )
+
+          const weekOrder = Object.keys(groupedByWeek).sort((a, b) => {
+            const first = groupedByWeek[a][0]
+            const second = groupedByWeek[b][0]
+            return getWeekSortKey(first.due_date) - getWeekSortKey(second.due_date)
+          })
+
           const isDragOver = dragOverStatus === column.status
 
           return (
@@ -516,7 +656,7 @@ export function KanbanBoard({
                   <span className={cn('h-2 w-2 rounded-full', column.dot)} />
                   {column.label}
                   <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1 text-xs font-medium text-muted-foreground">
-                    {items.length}
+                    {columnTasks.length}
                   </span>
                 </h3>
                 <Button
@@ -544,101 +684,129 @@ export function KanbanBoard({
                   isDragOver ? column.drop : 'border-border/60',
                 )}
               >
-                {items.map((task) => {
-                  const priority =
-                    task.priority !== null
-                      ? PRIORITY_META[task.priority as TaskPriority]
-                      : null
-                  return (
-                    <Card
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggedId(task.id)
-                        e.dataTransfer.effectAllowed = 'move'
-                      }}
-                      onDragEnd={() => {
-                        setDraggedId(null)
-                        setDragOverStatus(null)
-                      }}
-                      className={cn(
-                        'cursor-grab gap-3 py-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing',
-                        draggedId === task.id && 'opacity-50',
-                      )}
-                    >
-                      {task.image_url ? (
-                        <div className="relative -mt-3 h-28 w-full overflow-hidden">
-                          <Image
-                            src={task.image_url}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        </div>
-                      ) : null}
-                      <CardContent className="flex flex-col gap-2">
-                        <div className="flex items-start justify-between gap-2">
-                          {priority ? (
-                            <span
-                              className={cn(
-                                'rounded-full px-2 py-0.5 text-[0.65rem] font-semibold',
-                                priority.className,
-                              )}
-                            >
-                              {priority.label}
-                            </span>
-                          ) : (
-                            <span />
+                {weekOrder.map((weekLabel) => (
+                  <div key={weekLabel} className="space-y-2">
+                    {weekOrder.length > 1 && (
+                      <div className="flex items-center gap-2 px-1 pt-1">
+                        <span className="text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                          {weekLabel}
+                        </span>
+                        <div className="h-px flex-1 bg-border/50" />
+                      </div>
+                    )}
+                    {groupedByWeek[weekLabel].map((task) => {
+                      const priority =
+                        task.priority !== null
+                          ? PRIORITY_META[task.priority as TaskPriority]
+                          : null
+                      const isDone = task.status === 'done'
+                      return (
+                        <Card
+                          key={task.id}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedId(task.id)
+                            e.dataTransfer.effectAllowed = 'move'
+                          }}
+                          onDragEnd={() => {
+                            setDraggedId(null)
+                            setDragOverStatus(null)
+                          }}
+                          className={cn(
+                            'cursor-grab gap-3 py-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing',
+                            draggedId === task.id && 'opacity-50',
                           )}
-                          <div className="flex shrink-0 gap-0.5">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => openEdit(task)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <ConfirmDeleteButton
-                              title="Delete this task?"
-                              description={`"${task.title}" will be permanently removed.`}
-                              action={() => handleDelete(task.id)}
-                            />
-                          </div>
-                        </div>
-                        <p className="text-sm font-medium leading-snug">
-                          {task.title}
-                        </p>
-                        {task.notes ? (
-                          <p className="line-clamp-2 text-xs text-muted-foreground">
-                            {task.notes}
-                          </p>
-                        ) : null}
-                        {task.owner || task.due_date ? (
-                          <div className="flex items-center justify-between border-t pt-2">
-                            {task.owner ? (
-                              <div className="flex items-center gap-1.5">
-                                <OwnerAvatar owner={task.owner} />
-                                <span className="text-xs text-muted-foreground">
-                                  {task.owner}
-                                </span>
+                        >
+                          {task.image_url ? (
+                            <div className="relative -mt-3 h-28 w-full overflow-hidden">
+                              <Image
+                                src={task.image_url}
+                                alt=""
+                                fill
+                                className="object-cover"
+                                unoptimized
+                              />
+                            </div>
+                          ) : null}
+                          <CardContent className="flex flex-col gap-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {!isDone && (
+                                  <Checkbox
+                                    checked={false}
+                                    onCheckedChange={() => handleMarkDone(task)}
+                                    title="Mark as done"
+                                  />
+                                )}
+                                {priority ? (
+                                  <span
+                                    className={cn(
+                                      'rounded-full px-2 py-0.5 text-[0.65rem] font-semibold',
+                                      priority.className,
+                                    )}
+                                  >
+                                    {priority.label}
+                                  </span>
+                                ) : null}
                               </div>
-                            ) : (
-                              <span />
-                            )}
-                            {task.due_date ? (
-                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Flag className="h-3 w-3" />
-                                {formatDueDate(task.due_date)}
-                              </span>
+                              <div className="flex shrink-0 gap-0.5">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => handleArchive(task, true)}
+                                  title="Archive task"
+                                >
+                                  <Archive className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => openEdit(task)}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <ConfirmDeleteButton
+                                  title="Delete this task?"
+                                  description={`"${task.title}" will be permanently removed.`}
+                                  action={() => handleDelete(task.id)}
+                                />
+                              </div>
+                            </div>
+                            <p className="text-sm font-medium leading-snug">
+                              {task.title}
+                            </p>
+                            {task.notes ? (
+                              <p className="line-clamp-2 text-xs text-muted-foreground">
+                                {task.notes}
+                              </p>
                             ) : null}
-                          </div>
-                        ) : null}
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-                {items.length === 0 ? (
+                            {task.owner || task.due_date ? (
+                              <div className="flex items-center justify-between border-t pt-2">
+                                {task.owner ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <OwnerAvatar owner={task.owner} />
+                                    <span className="text-xs text-muted-foreground">
+                                      {task.owner}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span />
+                                )}
+                                {task.due_date ? (
+                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Flag className="h-3 w-3" />
+                                    {formatDueDate(task.due_date)}
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
+                  </div>
+                ))}
+                {columnTasks.length === 0 ? (
                   <p className="p-2 text-center text-xs text-muted-foreground">
                     Drag tasks here or tap + to add one.
                   </p>
@@ -648,6 +816,77 @@ export function KanbanBoard({
           )
         })}
       </div>
+
+      {archivedTasks.length > 0 && (
+        <Card className="mt-6">
+          <CardContent className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setShowArchive(!showArchive)}
+              className="flex w-full items-center justify-between"
+            >
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                <Archive className="h-3.5 w-3.5" />
+                Archived
+                <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1 text-xs font-medium">
+                  {archivedTasks.length}
+                </span>
+              </h3>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 text-muted-foreground transition-transform',
+                  showArchive && 'rotate-180',
+                )}
+              />
+            </button>
+            {showArchive && (
+              <ul className="space-y-1.5">
+                {archivedTasks.map((task) => (
+                  <li
+                    key={task.id}
+                    className="flex items-center gap-2 rounded-lg border border-dashed px-2.5 py-2 opacity-70"
+                  >
+                    <span className="flex-1 text-sm text-muted-foreground">
+                      {task.title}
+                    </span>
+                    {task.owner ? <OwnerAvatar owner={task.owner} /> : null}
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-[0.6rem] font-medium',
+                        COLUMNS.find((c) => c.status === task.status)?.dot
+                          .replace('bg-', 'bg-opacity-20 text-')
+                          .replace('-400', '-300') ?? 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {COLUMNS.find((c) => c.status === task.status)?.label}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handleArchive(task, false)}
+                      title="Restore task"
+                    >
+                      <ArchiveRestore className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => openEdit(task)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <ConfirmDeleteButton
+                      title="Delete this archived task?"
+                      description={`"${task.title}" will be permanently removed.`}
+                      action={() => handleDelete(task.id)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

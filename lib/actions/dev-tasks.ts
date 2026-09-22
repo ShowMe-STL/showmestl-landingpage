@@ -146,6 +146,43 @@ export async function setWeeklyCompletion(taskId: number, completed: boolean) {
   revalidatePath(DEV_TASKS_PATH)
 }
 
+export async function archiveTask(id: number, archived: boolean) {
+  await requireModerator()
+
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('dev_tasks')
+    .update({ is_archived: archived, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath(DEV_TASKS_PATH)
+}
+
+export async function markTaskDone(id: number) {
+  await requireModerator()
+
+  const supabase = createAdminClient()
+
+  const { count } = await supabase
+    .from('dev_tasks')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'done')
+    .eq('is_archived', false)
+
+  const { error } = await supabase
+    .from('dev_tasks')
+    .update({
+      status: 'done',
+      sort_order: count ?? 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+
+  if (error) return { error: error.message }
+  revalidatePath(DEV_TASKS_PATH)
+}
+
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 export async function uploadTaskImage(formData: FormData) {

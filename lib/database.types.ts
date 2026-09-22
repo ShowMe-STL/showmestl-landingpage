@@ -806,6 +806,7 @@ export type Database = {
           due_date: string | null
           id: number
           image_url: string | null
+          is_archived: boolean
           is_recurring: boolean
           notes: string | null
           owner: string | null
@@ -820,6 +821,7 @@ export type Database = {
           due_date?: string | null
           id?: never
           image_url?: string | null
+          is_archived?: boolean
           is_recurring?: boolean
           notes?: string | null
           owner?: string | null
@@ -834,6 +836,7 @@ export type Database = {
           due_date?: string | null
           id?: never
           image_url?: string | null
+          is_archived?: boolean
           is_recurring?: boolean
           notes?: string | null
           owner?: string | null
