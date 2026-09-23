@@ -155,7 +155,7 @@ Navbar manages its own `scrollY` MotionValue via a scroll listener (does NOT rec
 
 ### Columns
 
-1. **Brand block** — logo + "ShowMe STL" → `/`, copyright with "ShowMe Cities" → `https://showmecities.com`, social icons (Instagram → `https://www.instagram.com/shome.stl`, Facebook + TikTok placeholders).
+1. **Brand block** — logo + "ShowMe STL" → `/`, copyright with "ShowMe Cities" → `https://showmecities.com`, social icons (Instagram → `https://instagram.com/showme_stl`, Facebook + TikTok placeholders).
 2. **Pages** — Home (`/`), About (`/#about`), Support (`mailto:support@showmecities.com`).
 3. **Company** — Apps (`https://showmecities.com`), Privacy, Terms (both external to showmecities.com).
 4. **Get the app (QR)** — `Scan to install` label + clickable QR code that opens the install modal. QR is white-on-dark normally; on hover, container fades to white bg and QR inverts via CSS `filter: invert(1)`. Hidden on mobile (`md:block`).
@@ -179,7 +179,7 @@ Accepts `children` for content stacked inside the cutout (used for crossfading s
 - App Store URL: `https://apps.apple.com/app/id6760572115` (short form — also encodes more compactly into QR codes)
 - Parent company site: `https://showmecities.com`
 - Support email: `support@showmecities.com`
-- Instagram: `https://www.instagram.com/shome.stl`
+- Instagram: `https://instagram.com/showme_stl`
 - Production deploy URL: `https://stl.showmecities.app`
 
 In `next.config.ts`:
