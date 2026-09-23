@@ -418,7 +418,7 @@ export function KanbanBoard({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={ALL}>All</SelectItem>
-              <SelectItem value={NONE}>Unassigned</SelectItem>
+              <SelectItem value={NONE}>None</SelectItem>
               {OWNERS.map((owner) => (
                 <SelectItem key={owner} value={owner}>
                   {owner}
@@ -440,15 +440,15 @@ export function KanbanBoard({
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
+        <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-lg flex-col overflow-hidden sm:w-full">
+          <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
+            <DialogHeader className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-6">
               <DialogTitle>{editing ? 'Edit task' : 'Add task'}</DialogTitle>
               <DialogDescription>
                 Track something the team needs to work on.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6">
               <div className="space-y-2">
                 <Label htmlFor="task-title">Title</Label>
                 <Input
@@ -458,6 +458,7 @@ export function KanbanBoard({
                     setForm((f) => ({ ...f, title: e.target.value }))
                   }
                   required
+                  className="h-11 text-base sm:h-9 sm:text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -468,18 +469,22 @@ export function KanbanBoard({
                   onChange={(e) =>
                     setForm((f) => ({ ...f, notes: e.target.value }))
                   }
+                  className="min-h-[80px] text-base sm:text-sm"
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
+              <label className="flex min-h-[44px] items-center gap-3 text-sm sm:min-h-0 sm:gap-2">
                 <Checkbox
                   checked={form.is_recurring}
                   onCheckedChange={(checked) =>
                     setForm((f) => ({ ...f, is_recurring: checked === true }))
                   }
+                  className="h-5 w-5 sm:h-4 sm:w-4"
                 />
-                Recurring weekly task (shown as a standing checklist item)
+                <span className="leading-tight">
+                  Recurring weekly task (shown as a standing checklist item)
+                </span>
               </label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="task-owner">Owner</Label>
                   <Select
@@ -491,11 +496,11 @@ export function KanbanBoard({
                       }))
                     }
                   >
-                    <SelectTrigger id="task-owner" className="w-full">
-                      <SelectValue placeholder="Unassigned" />
+                    <SelectTrigger id="task-owner" className="h-11 w-full text-base sm:h-9 sm:text-sm">
+                      <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>Unassigned</SelectItem>
+                      <SelectItem value={NONE}>None</SelectItem>
                       {OWNERS.map((owner) => (
                         <SelectItem key={owner} value={owner}>
                           {owner}
@@ -515,11 +520,11 @@ export function KanbanBoard({
                       }))
                     }
                   >
-                    <SelectTrigger id="task-priority" className="w-full">
+                    <SelectTrigger id="task-priority" className="h-11 w-full text-base sm:h-9 sm:text-sm">
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={NONE}>No priority</SelectItem>
+                      <SelectItem value={NONE}>None</SelectItem>
                       {([0, 1, 2] as TaskPriority[]).map((p) => (
                         <SelectItem key={p} value={String(p)}>
                           {PRIORITY_META[p].label}
@@ -530,7 +535,7 @@ export function KanbanBoard({
                 </div>
               </div>
               {!form.is_recurring ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="task-due">Due date</Label>
                     <Input
@@ -543,6 +548,7 @@ export function KanbanBoard({
                           due_date: e.target.value || null,
                         }))
                       }
+                      className="h-11 text-base sm:h-9 sm:text-sm"
                     />
                   </div>
                   <div className="space-y-2">
@@ -553,7 +559,7 @@ export function KanbanBoard({
                         setForm((f) => ({ ...f, status: v as TaskStatus }))
                       }
                     >
-                      <SelectTrigger id="task-status" className="w-full">
+                      <SelectTrigger id="task-status" className="h-11 w-full text-base sm:h-9 sm:text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -591,16 +597,16 @@ export function KanbanBoard({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="h-11 gap-2 text-base sm:h-9 sm:text-sm"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <ImagePlus className="h-3.5 w-3.5" />
+                  <ImagePlus className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
                   {imagePreview ? 'Replace image' : 'Add image'}
                 </Button>
               </div>
             </div>
-            <DialogFooter>
-              <Button type="submit" disabled={isPending}>
+            <DialogFooter className="shrink-0 border-t border-zinc-800 bg-zinc-950/80 px-4 py-4 sm:px-6">
+              <Button type="submit" disabled={isPending} className="h-11 w-full text-base sm:h-9 sm:w-auto sm:text-sm">
                 {isPending ? 'Saving…' : editing ? 'Save changes' : 'Add task'}
               </Button>
             </DialogFooter>
