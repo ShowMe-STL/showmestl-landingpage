@@ -110,7 +110,6 @@ function getWeekLabel(weekKey: string): string {
 
   if (diffWeeks === 0) return 'This week'
   if (diffWeeks === 1) return 'Next week'
-  if (diffWeeks === -1) return 'Last week'
   if (diffWeeks < 0) return `${Math.abs(diffWeeks)} weeks ago`
   return `In ${diffWeeks} weeks`
 }
@@ -195,20 +194,7 @@ export function KanbanBoard({
   const activeTasks = tasks.filter((t) => !t.is_archived)
   const archivedTasks = tasks.filter((t) => t.is_archived)
 
-  const weekOptions = (() => {
-    const weeks = new Set<string>()
-    const currentMonday = getMondayOfWeek(new Date())
-    weeks.add(currentMonday.toISOString().split('T')[0])
-
-    for (const task of activeTasks) {
-      const weekKey = getTaskWeekKey(task)
-      if (weekKey) weeks.add(weekKey)
-    }
-
-    return Array.from(weeks)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-      .slice(0, 8)
-  })()
+  const thisWeekKey = getMondayOfWeek(new Date()).toISOString().split('T')[0]
 
   const filteredByOwner =
     ownerFilter === ALL
@@ -410,21 +396,18 @@ export function KanbanBoard({
           >
             All weeks
           </button>
-          {weekOptions.map((weekKey) => (
-            <button
-              key={weekKey}
-              type="button"
-              onClick={() => setWeekFilter(weekKey)}
-              className={cn(
-                'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                weekFilter === weekKey
-                  ? 'bg-zinc-800 text-white'
-                  : 'text-zinc-400 hover:text-zinc-200',
-              )}
-            >
-              {getWeekLabel(weekKey)}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setWeekFilter(thisWeekKey)}
+            className={cn(
+              'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              weekFilter === thisWeekKey
+                ? 'bg-zinc-800 text-white'
+                : 'text-zinc-400 hover:text-zinc-200',
+            )}
+          >
+            This week
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -434,7 +417,7 @@ export function KanbanBoard({
               <SelectValue placeholder="Person" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>All people</SelectItem>
+              <SelectItem value={ALL}>All</SelectItem>
               <SelectItem value={NONE}>Unassigned</SelectItem>
               {OWNERS.map((owner) => (
                 <SelectItem key={owner} value={owner}>
