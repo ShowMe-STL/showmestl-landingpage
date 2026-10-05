@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: 'Check in · ShowMe STL',
@@ -29,7 +30,7 @@ export default async function CheckInPage({ searchParams }: {
         {appUrl && <a href={appUrl} className="flex min-h-12 items-center justify-center rounded-full bg-[#c8072a] px-6 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Open ShowMe</a>}
         <a href="https://apps.apple.com/app/id6760572115" className="flex min-h-12 items-center justify-center rounded-full bg-white/10 px-6 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Get ShowMe for iPhone</a>
         {valid && <p className="text-sm leading-relaxed text-white/50">After installing or updating ShowMe, scan the tag again. If it opened in Safari, tap Open ShowMe above.</p>}
-        <a href="/" className="inline-block py-2 text-sm text-white/60 underline underline-offset-4">About ShowMe STL</a>
+        <Link href="/" className="inline-block py-2 text-sm text-white/60 underline underline-offset-4">About ShowMe STL</Link>
       </section>
     </main>
   )
