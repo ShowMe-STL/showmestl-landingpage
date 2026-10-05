@@ -1,0 +1,9 @@
+name = "showmestl-omen-nfc"
+main = "omen-nfc-worker.js"
+compatibility_date = "2026-09-17"
+account_id = "955963431efc47bff6ce1c1fba4fb463"
+
+routes = [
+  { pattern = "showmestl.app/.well-known/apple-app-site-association", zone_name = "showmestl.app" },
+  { pattern = "showmestl.app/raffle/omen*", zone_name = "showmestl.app" },
+]

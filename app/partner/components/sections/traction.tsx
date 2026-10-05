@@ -76,8 +76,8 @@ export function Traction() {
               style={{ top: '2.1%', bottom: '2.1%', left: '5%', right: '5%' }}
             >
               <Image
-                src="/screenshots/explore.png"
-                alt="ShowMe STL app explore screen"
+                src="/screenshots/discover.png"
+                alt="ShowMe STL app discover screen"
                 fill
                 sizes="240px"
                 className="object-cover object-top"

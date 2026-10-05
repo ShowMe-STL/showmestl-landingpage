@@ -5,18 +5,37 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react'
 import { Menu, X } from 'lucide-react'
+import { cabinetGroteskBold, clashGroteskRegular } from '../fonts/config'
 import { InstallQrModal } from './install-qr-modal'
+import { LiquidGlassFilter, useLiquidGlassFilter } from './liquid-glass-filter'
+import styles from './navbar.module.css'
 
 const APP_STORE_URL = 'https://apps.apple.com/app/id6760572115'
+const NAVBAR_DROP_START = 2950
+const NAVBAR_DROP_END = 3100
+const NAVBAR_HIDDEN_Y = -88
+
+const easeOutWithSoftBounce = (progress: number) => {
+  const overshoot = 0.9
+  const shiftedProgress = progress - 1
+
+  return (
+    1 +
+    (overshoot + 1) * Math.pow(shiftedProgress, 3) +
+    overshoot * Math.pow(shiftedProgress, 2)
+  )
+}
 
 const NAV_ITEMS: { label: string; href: string }[] = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/#about' },
   { label: 'Partner', href: '/partner' },
-  { label: 'Support', href: 'mailto:support@showmecities.com' },
+  { label: 'Support', href: 'mailto:support@showmestl.app' },
 ]
 
 export function Navbar() {
+  const glassRef = React.useRef<HTMLDivElement>(null)
+  const liquidGlassMap = useLiquidGlassFilter(glassRef)
   const [isOpen, setIsOpen] = useState(false)
   const toggleMenu = () => setIsOpen(!isOpen)
   const [qrOpen, setQrOpen] = useState(false)
@@ -34,20 +53,33 @@ export function Navbar() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [scrollY])
-  const opacity = useTransform(scrollY, [0, 400, 2950, 3100], [1, 0, 0, 1])
+  const opacity = useTransform(
+    scrollY,
+    [0, 400, NAVBAR_DROP_START - 1, NAVBAR_DROP_START],
+    [1, 0, 0, 1],
+  )
+  const y = useTransform(scrollY, (position) => {
+    if (position <= 400) return 0
+    if (position < NAVBAR_DROP_START) return NAVBAR_HIDDEN_Y
+    if (position >= NAVBAR_DROP_END) return 0
+
+    const progress =
+      (position - NAVBAR_DROP_START) /
+      (NAVBAR_DROP_END - NAVBAR_DROP_START)
+
+    return (
+      NAVBAR_HIDDEN_Y +
+      -NAVBAR_HIDDEN_Y * easeOutWithSoftBounce(progress)
+    )
+  })
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[100] flex w-full justify-center px-4 py-6">
+      <LiquidGlassFilter map={liquidGlassMap} />
       <motion.div
-        className="relative flex w-full max-w-[60rem] items-center justify-between rounded-full px-5 py-2"
-        style={{
-          opacity,
-          background: 'rgba(40, 36, 44, 0.3)',
-          boxShadow: '0 4px 30px rgba(0, 0, 0, 0.15)',
-          backdropFilter: 'blur(14px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-        }}
+        ref={glassRef}
+        className={`${styles.liquidGlass} ${liquidGlassMap ? styles.refractive : ''} relative flex w-full max-w-[60rem] items-center justify-between rounded-full px-5 py-2`}
+        style={{ opacity, y }}
       >
         <a href="/" className="flex items-center gap-2">
           <motion.div
@@ -55,11 +87,13 @@ export function Navbar() {
             animate={{ scale: 1 }}
             whileHover={{ rotate: 10 }}
             transition={{ duration: 0.3 }}
-            className="relative h-7 w-7 overflow-hidden rounded-md"
+            className="relative h-7 w-7 rounded-md"
           >
-            <Image src="/app-icon.png" alt="" fill sizes="28px" className="object-cover" priority />
+            <Image src="/logo.svg" alt="" fill sizes="28px" className="object-contain brightness-0 invert" priority />
           </motion.div>
-          <span className="text-sm font-semibold tracking-tight text-white">ShowMe STL</span>
+          <span className={`${cabinetGroteskBold.className} translate-y-px text-base font-bold tracking-tight text-white`}>
+            ShowMe STL
+          </span>
         </a>
 
         <div className="flex items-center gap-4 md:gap-8">
@@ -71,7 +105,7 @@ export function Navbar() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 >
-                <a href={item.href} className="text-sm font-medium text-white/70 transition-colors hover:text-white">
+                <a href={item.href} className={`${clashGroteskRegular.className} relative -top-px text-sm font-normal text-white/70 transition-colors hover:text-white`}>
                   {item.label}
                 </a>
               </motion.div>
@@ -139,7 +173,7 @@ export function Navbar() {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="block w-full py-4 text-lg font-medium text-white"
+                  className={`${clashGroteskRegular.className} block w-full py-4 text-lg font-normal text-white`}
                   onClick={() => toggleMenu()}
                 >
                   {item.label}

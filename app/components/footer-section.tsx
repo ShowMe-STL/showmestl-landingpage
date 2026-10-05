@@ -4,7 +4,8 @@ import { useState } from 'react'
 import Image from 'next/image'
 import type { ComponentProps, ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { siInstagram } from 'simple-icons'
+import { siInstagram, siYoutube } from 'simple-icons'
+import { cabinetGroteskBold } from '../fonts/config'
 import { QRCode } from './qr-code'
 import { InstallQrModal } from './install-qr-modal'
 
@@ -19,16 +20,16 @@ export function Footer() {
       <div className="grid w-full grid-cols-[1fr_auto] items-start gap-6 sm:gap-8 md:gap-10 xl:gap-12">
         <AnimatedContainer className="space-y-4">
           <a href="/" className="flex w-fit items-center gap-2">
-            <div className="relative h-8 w-8 overflow-hidden rounded-md">
+            <div className="relative h-8 w-8 rounded-md">
               <Image
-                src="/app-icon.png"
+                src="/logo.svg"
                 alt=""
                 fill
                 sizes="32px"
-                className="object-cover"
+                className="object-contain brightness-0 invert"
               />
             </div>
-            <span className="text-base font-semibold tracking-tight text-white">
+            <span className={`${cabinetGroteskBold.className} translate-y-px text-base font-bold tracking-tight text-white`}>
               ShowMe STL
             </span>
           </a>
@@ -49,13 +50,22 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-4 pt-2 text-white/60">
             <a
-              href="https://www.instagram.com/shome.stl"
+              href="https://www.instagram.com/showme_stl"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
               className="transition-colors hover:text-white"
             >
               <InstagramIcon className="size-6" />
+            </a>
+            <a
+              href="https://www.youtube.com/@showme_stl"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
+              className="transition-colors hover:text-white"
+            >
+              <YouTubeIcon className="size-6" />
             </a>
           </div>
         </AnimatedContainer>
@@ -114,6 +124,14 @@ function InstagramIcon(props: ComponentProps<'svg'>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d={siInstagram.path} />
+    </svg>
+  )
+}
+
+function YouTubeIcon(props: ComponentProps<'svg'>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d={siYoutube.path} />
     </svg>
   )
 }

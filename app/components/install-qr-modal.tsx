@@ -85,7 +85,6 @@ export function InstallQrModal({ href, open, onClose }: InstallQrModalProps) {
                 size={300}
                 fgColor="#0f0d10"
                 bgColor="#ffffff"
-                className="rounded-2xl"
               />
             </motion.div>
           </motion.div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { cubicBezier, motion, useScroll, useTransform } from 'motion/react'
+import { clashGroteskRegular, clashGroteskSemibold } from '../fonts/config'
 import Grainient from './grainient'
 import IPhoneMockup from './iphone-mockup'
 import { AppStoreCta } from './app-store-cta'
@@ -17,8 +18,8 @@ export default function Hero() {
   const phoneY = useTransform(scrollY, [0, 800], [0, phoneTargetY], {
     ease: cubicBezier(0.42, 0, 0.58, 1),
   })
-  const homeOpacity = useTransform(scrollY, [1650, 1900], [1, 0])
-  const exploreOpacity = useTransform(scrollY, [1650, 1900], [0, 1])
+  const firstScreenshotOpacity = useTransform(scrollY, [1650, 1900], [1, 0])
+  const secondScreenshotOpacity = useTransform(scrollY, [1650, 1900], [0, 1])
   const palette1Opacity = useTransform(
     scrollY,
     [1650, 1900, 2700, 2950],
@@ -29,24 +30,24 @@ export default function Hero() {
     [1650, 1900, 2700, 2950],
     [0, 1, 1, 0]
   )
-  const friendsOpacity = useTransform(
+  const firstFeatureOpacity = useTransform(
     scrollY,
     [850, 1200, 1650, 1900],
     [0, 1, 1, 0]
   )
-  const friendsX = useTransform(
+  const firstFeatureX = useTransform(
     scrollY,
     [850, 1200, 1650, 1900],
     [-24, 0, 0, -24]
   )
-  const curatedOpacity = useTransform(scrollY, [1900, 2250], [0, 1])
-  const curatedX = useTransform(scrollY, [1900, 2250], [24, 0])
-  const friendsHeadlineOpacity = useTransform(
+  const secondFeatureOpacity = useTransform(scrollY, [1900, 2250], [0, 1])
+  const secondFeatureX = useTransform(scrollY, [1900, 2250], [24, 0])
+  const firstHeadlineOpacity = useTransform(
     scrollY,
     [850, 1200, 1650, 1900],
     [0, 1, 1, 0]
   )
-  const curatedHeadlineOpacity = useTransform(
+  const secondHeadlineOpacity = useTransform(
     scrollY,
     [1900, 2250],
     [0, 1]
@@ -95,62 +96,62 @@ export default function Hero() {
           }}
         >
           <motion.div style={{ opacity: palette1Opacity }} className="absolute inset-0">
-            <Grainient color1="#FF6E52" color2="#0f0d10" color3="#3A87FF" />
+            <Grainient color1="#c8072a" color2="#0f0d10" color3="#002274" />
           </motion.div>
           <motion.div style={{ opacity: palette2Opacity }} className="absolute inset-0">
-            <Grainient color1="#2DBD8C" color2="#0f0d10" color3="#F2B840" />
+            <Grainient color1="#00a878" color2="#0f0d10" color3="#f5dd07" />
           </motion.div>
         </div>
         <motion.div
           style={{
-            opacity: friendsOpacity,
-            x: friendsX,
+            opacity: firstFeatureOpacity,
+            x: firstFeatureX,
             maxWidth: 'min(28rem, calc(50vw - min(100vh * 0.245, 210px) - 64px))',
           }}
           className="absolute top-1/2 left-10 hidden -translate-y-1/2 text-left md:block"
         >
-          <h2 className="text-3xl leading-tight font-semibold tracking-tight text-white md:text-4xl xl:text-5xl">
-            STL is more fun with friends.
+          <h2 className={`${clashGroteskSemibold.className} text-3xl leading-tight font-semibold tracking-tight text-white md:text-4xl xl:text-5xl`}>
+            Curated for You
           </h2>
-          <p className="mt-5 text-base font-light text-white/60 md:text-lg">
-            Follow people, see their check-ins, and find out where everyone&rsquo;s at — without the group chat chaos.
+          <p className={`${clashGroteskRegular.className} mt-5 text-base font-normal text-white/60 md:text-lg`}>
+            Browse hundreds of places by category, dive into featured playlists, and discover spots you never knew existed.
           </p>
         </motion.div>
         <motion.div
           style={{
-            opacity: curatedOpacity,
-            x: curatedX,
+            opacity: secondFeatureOpacity,
+            x: secondFeatureX,
             maxWidth: 'min(28rem, calc(50vw - min(100vh * 0.245, 210px) - 64px))',
           }}
           className="absolute top-1/2 right-10 hidden -translate-y-1/2 text-left md:block"
         >
-          <h2 className="text-3xl leading-tight font-semibold tracking-tight text-white md:text-4xl xl:text-5xl">
-            Curated for You
-          </h2>
-          <p className="mt-5 text-base font-light text-white/60 md:text-lg">
-            Browse hundreds of places by category, dive into featured playlists, and discover spots you never knew existed.
-          </p>
-        </motion.div>
-        <motion.div
-          style={{ opacity: friendsHeadlineOpacity }}
-          className="pointer-events-none absolute inset-x-6 top-[12vh] z-30 text-center md:hidden"
-        >
-          <h2 className="text-3xl leading-tight font-semibold tracking-tight text-white">
+          <h2 className={`${clashGroteskSemibold.className} text-3xl leading-tight font-semibold tracking-tight text-white md:text-4xl xl:text-5xl`}>
             STL is more fun with friends.
           </h2>
-          <p className="mt-3 text-left text-base font-light text-white/70">
+          <p className={`${clashGroteskRegular.className} mt-5 text-base font-normal text-white/60 md:text-lg`}>
             Follow people, see their check-ins, and find out where everyone&rsquo;s at — without the group chat chaos.
           </p>
         </motion.div>
         <motion.div
-          style={{ opacity: curatedHeadlineOpacity }}
+          style={{ opacity: firstHeadlineOpacity }}
           className="pointer-events-none absolute inset-x-6 top-[12vh] z-30 text-center md:hidden"
         >
-          <h2 className="text-3xl leading-tight font-semibold tracking-tight text-white">
+          <h2 className={`${clashGroteskSemibold.className} text-3xl leading-tight font-semibold tracking-tight text-white`}>
             Curated for You
           </h2>
-          <p className="mt-3 text-left text-base font-light text-white/70">
+          <p className={`${clashGroteskRegular.className} mt-3 text-left text-base font-normal text-white/70`}>
             Browse hundreds of places by category, dive into featured playlists, and discover spots you never knew existed.
+          </p>
+        </motion.div>
+        <motion.div
+          style={{ opacity: secondHeadlineOpacity }}
+          className="pointer-events-none absolute inset-x-6 top-[12vh] z-30 text-center md:hidden"
+        >
+          <h2 className={`${clashGroteskSemibold.className} text-3xl leading-tight font-semibold tracking-tight text-white`}>
+            STL is more fun with friends.
+          </h2>
+          <p className={`${clashGroteskRegular.className} mt-3 text-left text-base font-normal text-white/70`}>
+            Follow people, see their check-ins, and find out where everyone&rsquo;s at — without the group chat chaos.
           </p>
         </motion.div>
         <div className="absolute left-1/2 top-36 flex -translate-x-1/2 flex-col items-center text-center">
@@ -158,10 +159,10 @@ export default function Hero() {
             style={{ opacity: contentOpacity, y: contentY }}
             className="flex flex-col items-center"
           >
-            <h1 className="text-5xl leading-none font-semibold tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7rem]">
+            <h1 className={`${clashGroteskSemibold.className} text-5xl leading-none font-semibold tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7rem]`}>
               Find Your STL
             </h1>
-            <p className="mt-4 text-xl font-light text-white/60">
+            <p className={`${clashGroteskRegular.className} mt-4 text-xl font-normal text-white/60`}>
               Everything Saint Louis has to offer, right in your pocket.
             </p>
             <div className="mt-12 flex items-center justify-center gap-4">
@@ -175,12 +176,12 @@ export default function Hero() {
             >
             <IPhoneMockup>
               <motion.div
-                style={{ opacity: homeOpacity }}
+                style={{ opacity: firstScreenshotOpacity }}
                 className="absolute inset-0"
               >
                 <Image
-                  src="/screenshots/home.png"
-                  alt="App home screen"
+                  src="/screenshots/discover.png"
+                  alt="App discover screen"
                   fill
                   sizes="420px"
                   className="object-cover object-top"
@@ -188,12 +189,12 @@ export default function Hero() {
                 />
               </motion.div>
               <motion.div
-                style={{ opacity: exploreOpacity }}
+                style={{ opacity: secondScreenshotOpacity }}
                 className="absolute inset-0"
               >
                 <Image
-                  src="/screenshots/explore.png"
-                  alt="App explore screen"
+                  src="/screenshots/home.png"
+                  alt="App home screen"
                   fill
                   sizes="420px"
                   className="object-cover object-top"
