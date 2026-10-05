@@ -1,6 +1,19 @@
 import Link from 'next/link'
-import { MapPin, CalendarDays, ListMusic, Users, Tags } from 'lucide-react'
+import {
+  MapPin,
+  CalendarDays,
+  ListMusic,
+  Users,
+  Tags,
+  ArrowDownToLine,
+} from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getGrowthAnalytics } from '@/lib/analytics/growth'
+import { getAppStoreDownloads, type AppStoreDownloads } from '@/lib/analytics/app-store'
+import { getAiAnalytics, type AiAnalytics } from '@/lib/analytics/ai'
+import { getOpenAiSpend, type OpenAiSpend } from '@/lib/analytics/openai'
+import { GrowthDashboard } from '@/components/analytics/growth-dashboard'
+import { Separator } from '@/components/ui/separator'
 import {
   Card,
   CardContent,
@@ -8,6 +21,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+
+// Live dashboard — always rendered per request, never prerendered at build.
+export const dynamic = 'force-dynamic'
 
 async function getCounts() {
   const supabase = createAdminClient()
@@ -41,10 +57,79 @@ async function getCounts() {
   }
 }
 
-export default async function OverviewPage() {
-  const counts = await getCounts()
+async function getAppStoreSafely(): Promise<AppStoreDownloads> {
+  try {
+    return await getAppStoreDownloads(30)
+  } catch (err) {
+    return {
+      configured: true,
+      error: err instanceof Error ? err.message : 'App Store Connect request failed.',
+      daily: [],
+      allTime: null,
+      coverageStart: null,
+    }
+  }
+}
 
-  const stats = [
+async function getAiSafely(): Promise<AiAnalytics | null> {
+  try {
+    return await getAiAnalytics()
+  } catch {
+    return null
+  }
+}
+
+async function getOpenAiSafely(): Promise<OpenAiSpend> {
+  try {
+    return await getOpenAiSpend(30)
+  } catch (err) {
+    return {
+      configured: true,
+      error: err instanceof Error ? err.message : 'OpenAI usage request failed.',
+      scope: 'organization',
+      windowDays: 30,
+      totalCost: null,
+      daily: [],
+      tokens: null,
+      coverageStart: null,
+    }
+  }
+}
+
+function fmtMonth(key: string): string {
+  return new Date(`${key.slice(0, 7)}-15T12:00:00Z`).toLocaleDateString('en-US', {
+    timeZone: 'America/Chicago',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+export default async function OverviewPage() {
+  const [counts, analytics, appStore, ai, openai] = await Promise.all([
+    getCounts(),
+    getGrowthAnalytics(),
+    getAppStoreSafely(),
+    getAiSafely(),
+    getOpenAiSafely(),
+  ])
+
+  const downloadsHint = !appStore.configured
+    ? 'App Store Connect not configured'
+    : appStore.allTime === null
+      ? appStore.error ?? 'App Store Connect request failed'
+      : `ShowMe STL first-time App Store downloads${
+          appStore.coverageStart
+            ? ` since ${fmtMonth(appStore.coverageStart)}`
+            : ''
+        } (reports lag ~1–2 days)`
+
+  const stats: {
+    label: string
+    value: number | string
+    href?: string
+    icon: typeof MapPin
+    hint?: string
+  }[] = [
     {
       label: 'Places',
       value: counts.places,
@@ -75,6 +160,15 @@ export default async function OverviewPage() {
       href: '/admin/categories',
       icon: Tags,
     },
+    {
+      label: 'Downloads',
+      value:
+        appStore.configured && appStore.allTime !== null
+          ? appStore.allTime.toLocaleString()
+          : '—',
+      icon: ArrowDownToLine,
+      hint: downloadsHint,
+    },
   ]
 
   return (
@@ -86,21 +180,31 @@ export default async function OverviewPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {stats.map((stat) => {
           const Icon = stat.icon
-          return (
+          const card = (
+            <Card
+              title={stat.hint}
+              className={`h-full border-white/10 bg-card transition-colors${
+                stat.href ? ' hover:border-white/25' : ''
+              }`}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardDescription>{stat.label}</CardDescription>
+                <Icon className="h-4 w-4 text-white/40" />
+              </CardHeader>
+              <CardContent>
+                <CardTitle className="text-3xl">{stat.value}</CardTitle>
+              </CardContent>
+            </Card>
+          )
+          return stat.href ? (
             <Link key={stat.label} href={stat.href}>
-              <Card className="border-white/10 bg-card transition-colors hover:border-white/25">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardDescription>{stat.label}</CardDescription>
-                  <Icon className="h-4 w-4 text-white/40" />
-                </CardHeader>
-                <CardContent>
-                  <CardTitle className="text-3xl">{stat.value}</CardTitle>
-                </CardContent>
-              </Card>
+              {card}
             </Link>
+          ) : (
+            <div key={stat.label}>{card}</div>
           )
         })}
       </div>
@@ -117,6 +221,15 @@ export default async function OverviewPage() {
           </CardDescription>
         </CardHeader>
       </Card>
+
+      <Separator className="bg-white/10" />
+
+      <GrowthDashboard
+        analytics={analytics}
+        appStore={appStore}
+        ai={ai}
+        openai={openai}
+      />
     </div>
   )
 }

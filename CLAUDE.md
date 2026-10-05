@@ -194,6 +194,96 @@ In `next.config.ts`:
 
 `allowedDevOrigins` is required for HMR to work when accessing the dev server from a phone on the same WiFi. Without it, `pnpm dev -H 0.0.0.0` serves HTML but JS never hydrates on the phone (the HMR websocket fails). **If you change networks, update the IP in this file.**
 
+## Admin dashboard (`/admin`)
+
+Moderator-gated (`requireModerator()` in `lib/auth.ts`, checks the `moderators`
+table). CRUD pages for places/events/playlists/etc. live under
+`app/admin/(dashboard)/`. All server reads use the service-role client
+(`lib/supabase/admin.ts`), which bypasses RLS.
+
+Every dashboard route is a dynamic server component doing its own Supabase
+reads, so each has a `loading.tsx` (skeletons in
+`components/admin-layout/loading-skeletons.tsx`) — without them the router
+sits on the old page with no feedback until the next one is ready, which
+read as needing a double-click. The layout's `requireModerator()` still
+blocks the *first* entry into `/admin`; it doesn't re-run on tab-to-tab nav.
+
+The Places and Events pages (`app/admin/(dashboard)/{places,events}/page.tsx`)
+each show a small "… added per week" `<BarChart>` above the table, bucketed
+by `created_at` week in `America/Chicago`. Both use `CHART_SINCE =
+'2026-08-17'` to drop the early bulk-seed weeks (the ~780-row 2026-08-08
+place import in particular — the same migration the growth dashboard clips);
+capped at the last 16 weeks. Events pulls a separate `select('created_at')`
+so the `EventRow[]` passed to `EventsManager` stays exact.
+
+The Overview page (`app/admin/(dashboard)/page.tsx`, `dynamic = 'force-dynamic'`)
+renders the live count cards **and** `<GrowthDashboard />` — a YC-style funnel
+view (Signups · Activation · Active users · Retention · AI). Shared date/pagination
+helpers live in `lib/analytics/shared.ts`.
+
+- **`lib/analytics/growth.ts`** — `getGrowthAnalytics()`. Paginates the raw event
+  tables (`profiles`, `check_ins`, `check_in_comments`, `liked_places`,
+  `playlists` w/ non-null `owner_id`, `saved_playlists`, `friendships`,
+  `crowds`, `showme_ai_messages` joined to its chat) and computes everything
+  in process.
+  Days bucketed in `America/Chicago`. **Day keys are anchored at noon UTC** —
+  anchoring at midnight makes `Intl` format them back a day and `addDays` loops
+  forever (this OOM'd the build once).
+  - The 9 key actions (`ActionType` / `ACTION_LABELS`): AI message, place
+    check-in, event check-in (`check_ins` split by `event_id`/`archived_event_id`),
+    check-in comment, liked place, playlist created, playlist saved, friend
+    added (one `friendships` row → an event for *both* members), crowd created
+    (one `crowds` row → an event for the `owner_id`; "crowds" are private
+    reusable friend audiences). No "playlist comments" metric — there's no
+    such table.
+  - "Activated" = user ever did ≥1 key action. Adding actions here raises the
+    activation rate — keep `KEY_ACTIONS` copy in `growth-dashboard.tsx` in sync.
+  - `SIGNUP_TIMELINE_START` ('2026-08-09') clips the migration-day import
+    (~355 accounts stamped 2026-08-08) off the signups chart; those users
+    still count toward the cumulative/all-time totals. First-week activation
+    (`firstWeek` buckets, "Activated/Never activated in first 7 days") and the
+    weekly activation-rate trend **only** count accounts that signed up on/after
+    this date — migration accounts have no real onboarding window.
+  - Every stat tile and panel takes an `info` prop rendered as a hover/focus
+    `ⓘ` tooltip (`InfoDot` in `growth-dashboard.tsx`) explaining the metric.
+  - DAU/WAU/MAU active = performed a meaningful action that day. No app-open
+    telemetry exists. The headline **DAU/WAU stickiness** is `current.avgDau`
+    (mean DAU over the last 7 *complete* days — today's partial count dropped)
+    ÷ that week's WAU, not today's DAU ÷ WAU.
+  - Retention headline Dn = still active on/after day n; cohort triangle =
+    weekly signup cohorts × week-n active.
+- **`lib/analytics/app-store.ts`** — `getAppStoreDownloads()`. App Store Connect
+  Sales Reports API (ES256 JWT signed with `node:crypto`, no dep; gunzip + TSV
+  parse). Needs the 4 `APP_STORE_CONNECT_*` env vars (see `.env.local.example`);
+  returns `{ configured: false }` when absent and the UI hides those cards.
+  Daily reports lag ~1–2 days; each day's fetch is cached 12h. The SALES report
+  is per *vendor account*, so rows are filtered to ShowMe STL's Apple ID
+  (`6760572115`, overridable via `APP_STORE_CONNECT_APP_APPLE_ID`). All-time
+  downloads = MONTHLY report per complete month (from
+  `APP_STORE_CONNECT_FIRST_MONTH`, default 15 months back) + DAILY for the
+  current partial month; shown as a top-of-Overview count card. Apple publishes
+  a month's MONTHLY report a few days into the next month, so the daily window
+  also spans the **entire previous month** and any complete month whose MONTHLY
+  report is still missing falls back to its summed dailies — without this the
+  headline total dropped by a month's worth of installs every 1st.
+- **`lib/analytics/ai.ts`** — `getAiAnalytics()`. ShowMe AI adoption from the
+  `showme_ai_chats` / `_messages` / `_response_jobs` tables: distinct users,
+  messages/user (mean + median), per-day usage, message-count distribution,
+  repeat-day users, job failure rate, and p50/p90 latency from
+  `completed_at - started_at`. No token/cost data is stored, so dollars come
+  from OpenAI instead. Wrapped in `getAiSafely()` → returns `null` on error.
+- **`lib/analytics/openai.ts`** — `getOpenAiSpend()`. OpenAI **Usage/Costs Admin
+  API** (`/v1/organization/costs` + `/usage/completions`). Needs
+  `OPENAI_ADMIN_KEY` (an Admin key — `sk-admin-…`); `OPENAI_PROJECT_ID` scopes
+  it to one project, else it's org-wide (note in the UI). Costs `amount.value`
+  is USD; buckets are 1-day. Cost/message = window spend ÷ AI user-messages in
+  the same window. Degrades to `{ configured: false }`.
+- **`components/analytics/`** — inline-SVG charts (no charting dep), using the
+  `--chart-1..5` tokens. `charts.tsx` (line/area + vertical bar + `HBarChart`,
+  hover tooltips), `cohort-triangle.tsx`, `growth-dashboard.tsx` (client;
+  7/30/90/All range toggle + tabs). `InfoDot` tooltips are `position: fixed`
+  so they escape the `Card`'s `overflow-hidden`.
+
 ## Deployment
 
 1. `pnpm build` produces a standalone Node server bundle in `.next/standalone/`

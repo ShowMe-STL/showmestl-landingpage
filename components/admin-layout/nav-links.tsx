@@ -12,10 +12,11 @@ import {
   Shirt,
   Users,
   ShieldCheck,
+  ListTodo,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin/places', label: 'Places', icon: MapPin },
   { href: '/admin/events', label: 'Events', icon: CalendarDays },
@@ -25,14 +26,21 @@ const NAV_ITEMS = [
   { href: '/admin/dress-codes', label: 'Dress codes', icon: Shirt },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/moderators', label: 'Moderators', icon: ShieldCheck },
+  { href: '/admin/dev-tasks', label: 'Team Tasks', icon: ListTodo },
 ]
 
-export function NavLinks() {
+export function NavLinks({
+  items = NAV_ITEMS,
+  onNavigate,
+}: {
+  items?: typeof NAV_ITEMS
+  onNavigate?: () => void
+}) {
   const pathname = usePathname()
 
   return (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map((item) => {
+      {items.map((item) => {
         const active =
           item.href === '/admin'
             ? pathname === '/admin'
@@ -42,6 +50,7 @@ export function NavLinks() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={cn(
               'flex items-center gap-3 rounded-full px-3 py-2 text-sm font-medium transition-colors',
               active

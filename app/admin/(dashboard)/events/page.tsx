@@ -1,5 +1,40 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EventsManager } from '@/components/events/events-manager'
+import { BarChart } from '@/components/analytics/charts'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { addDays, dayKey, mondayOf } from '@/lib/analytics/shared'
+
+// Match the Places chart window: the early weeks were bulk seeding, so the
+// chart starts here and shows at most the last 16 weeks.
+const CHART_SINCE = '2026-08-17'
+const MAX_WEEKS = 16
+
+function eventsAddedPerWeek(createdAts: string[]) {
+  const byWeek = new Map<string, number>()
+  for (const iso of createdAts) {
+    const wk = mondayOf(dayKey(iso))
+    if (wk < CHART_SINCE) continue
+    byWeek.set(wk, (byWeek.get(wk) ?? 0) + 1)
+  }
+
+  const thisWeek = mondayOf(dayKey(new Date()))
+  const rows: { label: string; value: number; sub: string }[] = []
+  for (let wk = CHART_SINCE; wk <= thisWeek; wk = addDays(wk, 7)) {
+    const [, m, d] = wk.split('-')
+    const n = byWeek.get(wk) ?? 0
+    rows.push({
+      label: `${Number(m)}/${Number(d)}`,
+      value: n,
+      sub: `Week of ${Number(m)}/${Number(d)} — ${n} event${n === 1 ? '' : 's'} added`,
+    })
+  }
+  return rows.slice(-MAX_WEEKS)
+}
 
 export default async function EventsPage() {
   const supabase = createAdminClient()
@@ -12,6 +47,7 @@ export default async function EventsPage() {
     assignmentsRes,
     placesRes,
     trendingRes,
+    createdAtRes,
   ] = await Promise.all([
     supabase
       .from('events')
@@ -38,7 +74,14 @@ export default async function EventsPage() {
       .select('event_id, enabled')
       .not('event_id', 'is', null)
       .eq('enabled', true),
+    supabase.from('events').select('created_at'),
   ])
+
+  const weeklyAdds = eventsAddedPerWeek(
+    (createdAtRes.data ?? [])
+      .map((e) => e.created_at as string | null)
+      .filter((v): v is string => Boolean(v)),
+  )
 
   const assignmentsByEvent = new Map<number, number[]>()
   for (const row of assignmentsRes.data ?? []) {
@@ -63,6 +106,18 @@ export default async function EventsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
         <p className="text-muted-foreground">{events.length} events total.</p>
       </div>
+
+      {weeklyAdds.length > 0 && (
+        <Card className="border-white/10 bg-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Events added per week</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarChart data={weeklyAdds} height={180} color="var(--chart-1)" />
+          </CardContent>
+        </Card>
+      )}
+
       <EventsManager
         initialEvents={events}
         neighborhoods={neighborhoodsRes.data ?? []}

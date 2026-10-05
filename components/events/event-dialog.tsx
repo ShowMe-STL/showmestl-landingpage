@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition, type FormEvent } from 'react'
+import { useState, useTransition, useEffect, type FormEvent } from 'react'
 import { toast } from 'sonner'
+import { ImageOff, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -21,11 +22,115 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { MultiSelectPicker } from '@/components/multi-select-picker'
-import { createEvent, updateEvent, type EventInput } from '@/lib/actions/events'
+import {
+  createEvent,
+  updateEvent,
+  checkEventDuplicates,
+  type EventInput,
+  type DuplicateMatch,
+} from '@/lib/actions/events'
 import type { EventRow } from './events-manager'
 
 const NONE = '__none__'
+
+type ImageLoadState = 'idle' | 'loading' | 'loaded' | 'error'
+
+function useImagePreview(url: string) {
+  const [state, setState] = useState<{
+    status: ImageLoadState
+    debouncedUrl: string
+    currentUrl: string
+  }>({ status: 'idle', debouncedUrl: '', currentUrl: '' })
+
+  useEffect(() => {
+    const trimmed = url.trim()
+    if (!trimmed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset state when URL is cleared
+      setState({ status: 'idle', debouncedUrl: '', currentUrl: '' })
+      return
+    }
+
+    setState((prev) => ({
+      ...prev,
+      status: 'loading',
+      currentUrl: trimmed,
+    }))
+
+    const timeout = setTimeout(() => {
+      const img = new window.Image()
+      img.onload = () =>
+        setState((prev) =>
+          prev.currentUrl === trimmed
+            ? { ...prev, status: 'loaded', debouncedUrl: trimmed }
+            : prev,
+        )
+      img.onerror = () =>
+        setState((prev) =>
+          prev.currentUrl === trimmed
+            ? { ...prev, status: 'error', debouncedUrl: trimmed }
+            : prev,
+        )
+      img.src = trimmed
+    }, 400)
+
+    return () => clearTimeout(timeout)
+  }, [url])
+
+  return state
+}
+
+function ImageUrlPreview({
+  url,
+  label,
+}: {
+  url: string
+  label: string
+}) {
+  const { status, debouncedUrl } = useImagePreview(url)
+
+  if (!url.trim()) return null
+
+  return (
+    <div className="mt-2">
+      {status === 'loading' && (
+        <div className="flex h-20 w-32 items-center justify-center rounded-md border border-white/10 bg-black/20">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white/60" />
+        </div>
+      )}
+      {status === 'loaded' && (
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={debouncedUrl}
+            alt={`${label} preview`}
+            className="h-20 w-auto max-w-[200px] rounded-md border border-white/10 object-cover"
+          />
+          <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[10px] text-white/80">
+            {label}
+          </span>
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="flex h-20 w-32 flex-col items-center justify-center gap-1 rounded-md border border-red-500/30 bg-red-500/10">
+          <ImageOff className="h-5 w-5 text-red-400" />
+          <span className="text-[10px] text-red-400">Failed to load</span>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function toDatetimeLocal(iso: string | null) {
   if (!iso) return ''
@@ -62,54 +167,96 @@ export function EventDialog({
 }) {
   const [form, setForm] = useState(() => toFormState(event))
   const [isPending, startTransition] = useTransition()
+  const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([])
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false)
+  const [skipDuplicateCheck, setSkipDuplicateCheck] = useState(false)
 
   const key = event?.id ?? 'new'
   const [lastKey, setLastKey] = useState(key)
   if (lastKey !== key) {
     setLastKey(key)
     setForm(toFormState(event))
+    setDuplicates([])
+    setShowDuplicateWarning(false)
+    setSkipDuplicateCheck(false)
+  }
+
+  const placeNameLookup = (id: string) => {
+    const p = places.find((pl) => String(pl.id) === id)
+    return p?.name ?? null
+  }
+
+  async function performSave() {
+    const input: EventInput = {
+      title: form.title,
+      description: form.description || null,
+      start_time: fromDatetimeLocal(form.start_time),
+      end_time: form.end_time ? fromDatetimeLocal(form.end_time) : null,
+      place_id: form.place_id ? Number(form.place_id) : null,
+      venue_name: form.venue_name || null,
+      address: form.address || null,
+      website: form.website || null,
+      image_url: form.image_url || null,
+      image_thumb_url: form.image_thumb_url || null,
+      neighborhood_id: form.neighborhood_id
+        ? Number(form.neighborhood_id)
+        : null,
+      category_ids: form.category_ids,
+      dress_code_id: form.dress_code_id ? Number(form.dress_code_id) : null,
+      custom_dress_code: form.dress_code_id
+        ? null
+        : form.custom_dress_code || null,
+      recurrence_rule: form.recurrence_rule || null,
+      recurrence_timezone: form.recurrence_timezone || null,
+      latitude: form.latitude ? Number(form.latitude) : null,
+      longitude: form.longitude ? Number(form.longitude) : null,
+    }
+
+    const result = event
+      ? await updateEvent(event.id, input)
+      : await createEvent(input)
+
+    if (result && 'error' in result && result.error) {
+      toast.error(result.error)
+      return
+    }
+
+    toast.success(event ? 'Event updated.' : 'Event added.')
+    onOpenChange(false)
+    onSaved()
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     startTransition(async () => {
-      const input: EventInput = {
-        title: form.title,
-        description: form.description || null,
-        start_time: fromDatetimeLocal(form.start_time),
-        end_time: form.end_time ? fromDatetimeLocal(form.end_time) : null,
-        place_id: form.place_id ? Number(form.place_id) : null,
-        venue_name: form.venue_name || null,
-        address: form.address || null,
-        website: form.website || null,
-        image_url: form.image_url || null,
-        image_thumb_url: form.image_thumb_url || null,
-        neighborhood_id: form.neighborhood_id
-          ? Number(form.neighborhood_id)
-          : null,
-        category_ids: form.category_ids,
-        dress_code_id: form.dress_code_id ? Number(form.dress_code_id) : null,
-        custom_dress_code: form.dress_code_id
-          ? null
-          : form.custom_dress_code || null,
-        recurrence_rule: form.recurrence_rule || null,
-        recurrence_timezone: form.recurrence_timezone || null,
-        latitude: form.latitude ? Number(form.latitude) : null,
-        longitude: form.longitude ? Number(form.longitude) : null,
-      }
-
-      const result = event
-        ? await updateEvent(event.id, input)
-        : await createEvent(input)
-
-      if (result && 'error' in result && result.error) {
-        toast.error(result.error)
+      if (skipDuplicateCheck) {
+        await performSave()
         return
       }
 
-      toast.success(event ? 'Event updated.' : 'Event added.')
-      onOpenChange(false)
-      onSaved()
+      const { duplicates: found } = await checkEventDuplicates({
+        title: form.title,
+        start_time: fromDatetimeLocal(form.start_time),
+        place_id: form.place_id ? Number(form.place_id) : null,
+        venue_name: form.venue_name || null,
+        excludeId: event?.id,
+      })
+
+      if (found.length > 0) {
+        setDuplicates(found)
+        setShowDuplicateWarning(true)
+        return
+      }
+
+      await performSave()
+    })
+  }
+
+  function handleProceedAnyway() {
+    setShowDuplicateWarning(false)
+    setSkipDuplicateCheck(true)
+    startTransition(async () => {
+      await performSave()
     })
   }
 
@@ -386,29 +533,41 @@ export function EventDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  value={form.image_url}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, image_url: e.target.value }))
-                  }
-                />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="image_url">Image URL</Label>
+                  <Input
+                    id="image_url"
+                    type="url"
+                    value={form.image_url}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, image_url: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="image_thumb_url">Thumbnail URL</Label>
+                  <Input
+                    id="image_thumb_url"
+                    type="url"
+                    value={form.image_thumb_url}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, image_thumb_url: e.target.value }))
+                    }
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="image_thumb_url">Thumbnail URL</Label>
-                <Input
-                  id="image_thumb_url"
-                  type="url"
-                  value={form.image_thumb_url}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, image_thumb_url: e.target.value }))
-                  }
-                />
-              </div>
+              {(form.image_url || form.image_thumb_url) && (
+                <div className="flex flex-wrap gap-4">
+                  {form.image_url && (
+                    <ImageUrlPreview url={form.image_url} label="Full" />
+                  )}
+                  {form.image_thumb_url && (
+                    <ImageUrlPreview url={form.image_thumb_url} label="Thumb" />
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -419,6 +578,66 @@ export function EventDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={showDuplicateWarning} onOpenChange={setShowDuplicateWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-amber-500/10">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Possible duplicate event</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="mb-3 block">
+                An event with a similar title on the same day at the same venue already exists:
+              </span>
+              <ul className="space-y-2 text-left">
+                {duplicates.map((d) => (
+                  <li
+                    key={d.id}
+                    className="rounded border border-white/10 bg-white/5 p-2 text-xs"
+                  >
+                    <strong className="text-foreground">{d.title}</strong>
+                    <br />
+                    <span className="text-muted-foreground">
+                      {new Date(d.start_time).toLocaleDateString('en-US', {
+                        dateStyle: 'medium',
+                      })}
+                      {' at '}
+                      {d.place_id
+                        ? placeNameLookup(String(d.place_id)) ?? 'Unknown place'
+                        : d.venue_name ?? 'Unknown venue'}
+                    </span>
+                    {d.website && (
+                      <>
+                        <br />
+                        <a
+                          href={d.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-400 hover:underline"
+                        >
+                          {d.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                        </a>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleProceedAnyway}
+              disabled={isPending}
+              variant="outline"
+              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+            >
+              {isPending ? 'Saving…' : 'Save anyway'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   )
 }
