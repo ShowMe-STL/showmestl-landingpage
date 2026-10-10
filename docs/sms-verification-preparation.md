@@ -1,41 +1,50 @@
-# SMS verification website preparation
+# ShowMe STL legal pages and SMS verification
 
-This is an **unapproved preparation patch, unpublished to production**, for
-ShowMe STL's upcoming mobile phone-auth release. A feature branch and draft PR
-make it reviewable; repository automation may generate a preview. No production
-publication, manual deployment, SMS send, carrier submission, or NFC/AASA
-rollout is part of this patch.
+The owner authorized publication of the SMS disclosures and then a rebuild
+of the full, app-branded Terms of Service and Privacy Policy at the existing
+ShowMe STL routes. The full documents replace the earlier SMS supplements;
+they no longer depend on externally hosted full-policy pages. Publication uses
+the existing GitHub/Vercel deployment. Verify the deployed full-document
+content using the publication checklist below.
 
-## Proposed routes
+This website publication does not enable phone authentication or establish
+carrier approval. Phone verification remains an upcoming service, the mobile
+Auth rollout remains disabled, and delivery/device checks remain pending.
+The separate NFC/AASA routes, domain configuration, and deferred rollout are
+untouched.
 
-- `/sms-verification`: explains the actual locally implemented phone
-  signup/login and existing-account migration request actions, repeats their
-  exact basic disclosure, and shows the sender's six-digit-code template.
-  It states that the app flow is upcoming. It has no form or send operation
-  and must not be represented as the actual opt-in screen.
-- `/terms-of-service`: clearly labeled phone-verification **supplement**,
-  linking the existing full Terms at `https://www.vivastl.com/terms/`.
-- `/privacy-policy`: clearly labeled phone-verification **supplement**,
-  linking the existing full Privacy Policy at
-  `https://www.vivastl.com/privacy/`.
+## Routes and links
 
-The main landing-page source contains no full Terms or Privacy policy, and
-the source hosting the existing Viva policies was not located. These pages
-supplement them rather than invent unrelated terms or silently replace them.
-The new pages share an accessible, static information layout using the
-existing fonts and palette. Existing pages, navigation, root layout, domain
-metadata, proxy, AASA routes, and deploy configuration are unchanged.
+- `https://www.showmestl.app/terms-of-service`: the full ShowMe STL Terms of
+  Service, including app use, accounts, user content, service availability,
+  and transactional verification texts. It distinguishes phone-enabled app
+  versions from older email-auth versions.
+- `https://www.showmestl.app/privacy-policy`: the full ShowMe STL Privacy
+  Policy, including account information, social features, photos, location,
+  chat, notifications, service providers, and phone/SMS processing.
+- `/sms-verification`: explains the implemented upcoming phone signup/login
+  and same-account migration request actions, repeats their exact consent
+  notice, and shows the six-digit-code template. It has no form or send
+  operation and is not the actual opt-in screen.
 
-The support address `support@showmestl.app` matches the existing public
-website navigation and mobile Legal & Support screen. The owner must confirm
-that inbox is operational before final publication; the configured HELP reply
-already uses this same public address, but inbox delivery is not tested.
-No owner names, private business identifiers, sender numbers, or credentials
-are added. No unsupported consent-logging or exact provider-retention claim
-is made. US default STOP/START behavior and the number-specific HELP rule have
-been verified in Bird configuration. Recipient-device behavior is not yet
-tested. The local mobile notice and both website quotations now include
-“Reply STOP to opt out or HELP for help.” The SMS message body is unchanged.
+The legal documents use the shared legal-document layout. Homepage footer
+links and the SMS information page link directly to these canonical routes.
+The mobile shared legal-link constants and Bird's saved registration draft
+also use the same two public URLs. App Store metadata is managed separately;
+changing website or mobile source does not update the store listing.
+
+The support address `support@showmestl.app` matches public website navigation,
+mobile Legal & Support, and the configured HELP reply. Inbox delivery has not
+been tested and should be verified before the SMS release. No private business
+identifiers, sender numbers, or credentials are added. The policies make no
+unsupported consent-logging or exact provider-retention claim. The privacy
+policy distinguishes service-provider processing from the commitment not to
+sell or share phone numbers or SMS opt-in consent for third-party marketing.
+
+US default STOP/START behavior and the number-specific HELP rule have been
+verified in Bird configuration. Recipient-device behavior has not yet been
+tested. The mobile notice and both website quotations include “Reply STOP to
+opt out or HELP for help.” The SMS message body is unchanged.
 
 The persisted sender-specific HELP reply is:
 
@@ -52,37 +61,46 @@ country-code entry; this patch does not restrict that acceptance. Supported
 destination scope must be resolved or validated before release, since the
 US rule checks do not establish keyword readiness for every accepted number.
 
-## Review and publication requirements
+## Actual opt-in evidence
 
-1. Owner reviews the proposed supplements, including the no-marketing-sharing
-   commitment, and decides whether the full Viva documents should instead
-   be revised at their current locations. Verify the final complete public
-   policy plus supplement arrangement meets the carrier's requirement.
-2. Validate actual STOP suppression of OTPs, START resumption, HELP delivery,
-   and the normal OTP delivery flow on a recipient device. The US sender's
-   keyword configuration is verified; recipient tests are pending. This source
-   preparation does not complete sender verification or carrier approval.
-3. The user captures actual physical-iPhone phone signup/login and migration
-   screens showing the input, full notice, legal links, and Next/Send Code
-   action. A screenshot of this informational page, draft, or fabricated
-   mockup is not evidence that the app implements opt-in. No screenshots
-   have been created or inserted in this patch.
-4. Authorize publication separately. Check the chosen routes without login
-   or deployment protection and verify complete, approved legal content.
-   These paths are proposed local routes, not currently working public URLs.
-5. Coordinate mobile legal URLs and carrier evidence with the actual
-   published destinations. Mobile currently links the existing Viva pages;
-   those URLs have not been changed by this website patch.
-6. Complete provider delivery, legacy email migration, app release, and
-   privileged-service checks before mandatory phone-auth cutover. Maintain
-   the disabled rollout until the combined system is ready.
+The owner captured the implemented signup screen on a physical iPhone and
+authorized its use. The original `1-Photo-1.jpg` (about 72 KB) shows a fictional
+example phone number, the complete verification-text notice, tappable Terms
+of Use and Privacy Policy labels, and the Next action together. It is attached
+to Bird's existing registration draft; the draft was saved and reopened to
+verify that the attachment persisted.
 
-The website pages use publication-ready customer wording, with a brief
-statement that phone verification is an upcoming service and that the
-disclosures apply to phone-enabled app versions. Legal-adoption warnings,
-configuration details, and pending-test notes stay in this review document
-and the draft PR. **The policy language is proposed and has not been adopted;
-owner approval is required before publication**, including the direct
-no-marketing-sharing commitment. The phone-auth feature remains not ready
-for release while public policy publication, provider/device checks, and
-real opt-in evidence are pending.
+This is evidence of the implemented upcoming signup UI, not an SMS delivery
+test or proof of carrier approval. The website information page is not used
+as a substitute for that capture. The temporary development screenshot launch
+was disabled after capture. Separate login and migration captures have not
+been supplied.
+
+## Publish and verify checklist
+
+1. Complete deployment of the full legal documents. Check both canonical URLs
+   without login or deployment protection, verify HTTP 200 and the complete
+   Terms of Service / Privacy Policy content, and confirm that they no longer
+   render the previous supplements. Check their section links and homepage
+   footer links.
+2. Confirm that the mobile consent notice, Legal & Support screen, and Bird
+   registration all use the same canonical Terms and Privacy URLs. Website
+   publication does not install updated mobile code or update App Store
+   metadata; verify those destinations separately where applicable.
+3. Complete carrier verification using the saved actual opt-in evidence and
+   public policies. Submission and carrier approval are separate states;
+   neither website publication nor a submitted application enables the Auth
+   rollout on its own.
+4. Validate actual STOP suppression of OTPs, START resumption, HELP delivery,
+   normal OTP delivery, and the support inbox. The US keyword configuration
+   is verified; recipient tests remain pending.
+5. Resolve supported destination scope and complete legacy email migration,
+   app release, and privileged-service checks before mandatory phone-auth
+   cutover. Maintain the disabled rollout until the combined system is ready.
+
+The public pages describe SMS behavior for phone-enabled app versions and
+identify phone verification as upcoming. Configuration details and pending
+release checks belong in this document, not in the customer-facing legal
+flow. Public legal pages and opt-in evidence support carrier review, while
+provider/device verification and the coordinated app/backend release remain
+separate work.

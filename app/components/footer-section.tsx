@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { ComponentProps, ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { siInstagram, siYoutube } from 'simple-icons'
@@ -19,7 +20,7 @@ export function Footer() {
 
       <div className="grid w-full grid-cols-[1fr_auto] items-start gap-6 sm:gap-8 md:gap-10 xl:gap-12">
         <AnimatedContainer className="space-y-4">
-          <a href="/" className="flex w-fit items-center gap-2">
+          <Link href="/" className="flex w-fit items-center gap-2">
             <div className="relative h-8 w-8 rounded-md">
               <Image
                 src="/logo.svg"
@@ -32,7 +33,7 @@ export function Footer() {
             <span className={`${cabinetGroteskBold.className} translate-y-px text-base font-bold tracking-tight text-white`}>
               ShowMe STL
             </span>
-          </a>
+          </Link>
           <p className="mt-8 hidden text-sm text-white/50 md:mt-0 md:block">
             <span className="whitespace-nowrap">
               © {new Date().getFullYear()}{' '}
@@ -68,6 +69,20 @@ export function Footer() {
               <YouTubeIcon className="size-6" />
             </a>
           </div>
+          <nav aria-label="Legal information" className="flex flex-wrap gap-x-6 text-sm text-white/60">
+            <Link
+              href="/terms-of-service"
+              className="inline-flex min-h-11 items-center underline underline-offset-4 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              Terms of Service
+            </Link>
+            <Link
+              href="/privacy-policy"
+              className="inline-flex min-h-11 items-center underline underline-offset-4 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              Privacy Policy
+            </Link>
+          </nav>
         </AnimatedContainer>
 
         <AnimatedContainer delay={0.2} className="hidden justify-self-start md:block xl:justify-self-end">
