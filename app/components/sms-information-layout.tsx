@@ -3,8 +3,6 @@ import Link from 'next/link'
 import { cabinetGroteskBold, clashGroteskRegular } from '../fonts/config'
 
 export const smsSupportEmail = 'support@showmestl.app'
-export const existingPrivacyPolicyUrl = 'https://www.vivastl.com/privacy/'
-export const existingTermsUrl = 'https://www.vivastl.com/terms/'
 
 export function SmsInformationLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -24,8 +22,8 @@ export function SmsInformationLayout({ title, children }: { title: string; child
         <div className="mt-8 space-y-8 text-base leading-7 text-white/80">{children}</div>
         <nav aria-label="Phone verification information" className="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/10 pt-5 text-sm">
           <Link href="/sms-verification" className="inline-flex min-h-11 items-center underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Verification texts</Link>
-          <Link href="/terms-of-service" className="inline-flex min-h-11 items-center underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">SMS terms supplement</Link>
-          <Link href="/privacy-policy" className="inline-flex min-h-11 items-center underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">SMS privacy supplement</Link>
+          <Link href="/terms-of-service" className="inline-flex min-h-11 items-center underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Terms of Service</Link>
+          <Link href="/privacy-policy" className="inline-flex min-h-11 items-center underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Privacy Policy</Link>
         </nav>
       </article>
     </main>
