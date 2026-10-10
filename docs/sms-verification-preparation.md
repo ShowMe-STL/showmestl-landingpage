@@ -1,8 +1,10 @@
 # SMS verification website preparation
 
-This is an **unpublished, unapproved preparation patch** for ShowMe STL's
-upcoming mobile phone-auth release. No push, deployment, SMS send, carrier
-submission, or NFC/AASA rollout is part of this patch.
+This is an **unapproved preparation patch, unpublished to production**, for
+ShowMe STL's upcoming mobile phone-auth release. A feature branch and draft PR
+make it reviewable; repository automation may generate a preview. No production
+publication, manual deployment, SMS send, carrier submission, or NFC/AASA
+rollout is part of this patch.
 
 ## Proposed routes
 
