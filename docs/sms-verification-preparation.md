@@ -7,6 +7,11 @@ they no longer depend on externally hosted full-policy pages. Publication uses
 the existing GitHub/Vercel deployment. Verify the deployed full-document
 content using the publication checklist below.
 
+The V2 content review in `docs/legal-content-review.md` adds detailed AI,
+social/location, device-surface and deletion disclosures while preserving
+the transactional SMS notice and canonical links. Separate implementation
+findings are not resolved by publishing policy text.
+
 This website publication does not enable phone authentication or establish
 carrier approval. Phone verification remains an upcoming service, the mobile
 Auth rollout remains disabled, and delivery/device checks remain pending.

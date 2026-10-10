@@ -91,6 +91,7 @@
 
 .documentGrid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 48px; align-items: start; }
 .sidebar { position: sticky; top: 32px; padding-bottom: 32px; }
+.contents { max-height: calc(100svh - 96px); overflow-y: auto; }
 .contentsTitle { font-size: 15px; margin-bottom: 14px; }
 .mobileContents { display: none; }
 .contentsList { display: flex; flex-direction: column; gap: 2px; list-style: none; padding: 0; margin: 0; }
