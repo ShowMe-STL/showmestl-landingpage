@@ -30,6 +30,7 @@ const NAV_ITEMS: { label: string; href: string }[] = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/#about' },
   { label: 'Partner', href: '/partner' },
+  { label: 'Web Services', href: '/websites' },
   { label: 'Support', href: 'mailto:support@showmestl.app' },
 ]
 
