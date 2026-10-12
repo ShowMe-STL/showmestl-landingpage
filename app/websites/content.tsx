@@ -4,48 +4,58 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion, useReducedMotion } from 'motion/react'
 import type { ComponentProps, ReactNode } from 'react'
-import { ArrowRight, Globe, Smartphone, Sparkles } from 'lucide-react'
+import { ArrowRight, Globe, Smartphone, Sparkles, Check } from 'lucide-react'
 import { cabinetGroteskBold, clashGroteskSemibold } from '../fonts/config'
 
-const CONTACT_EMAIL = 'mailto:support@showmestl.app?subject=Web%20Services%20Inquiry'
+const CONTACT_EMAIL = 'mailto:hello@showmestl.app?subject=Web%20Services%20Inquiry'
 
 const SERVICES = [
   {
     icon: Globe,
-    title: '$100 Website',
-    tagline: 'For St. Louis local businesses',
-    description: 'A clean, mobile-friendly site hosted on ShowMe STL. We connect it to your own domain too. Every visitor sees your business and discovers ShowMe STL — and every ShowMe STL user can discover you.',
+    title: 'Starter Site',
+    tagline: 'Start here',
+    price: '$100 setup',
+    perMonth: '+ $49/mo',
+    description: 'One mobile page with your hours, menu, map, and a contact or booking link. Basic SEO and a feature in the ShowMe STL app.',
     highlight: true,
-    features: ['Mobile-friendly design', 'Hosted on showmestl.app', 'Your own domain connected', 'Drives traffic both ways'],
   },
   {
     icon: Sparkles,
-    title: 'Custom Websites',
-    tagline: 'Built to your specs',
-    description: 'Need something bigger? We build polished marketing sites, landing pages, and web apps. Clean code, fast loading, designed to convert.',
+    title: 'Custom Site',
+    tagline: 'Full design',
+    price: '$1,500–$3,000',
+    perMonth: '+ $79/mo care',
+    description: 'A full site designed around your spot. We keep it updated and running every month.',
     highlight: false,
-    features: ['Modern tech stack', 'Fast & optimized', 'SEO-ready', 'Ongoing support available'],
   },
   {
     icon: Smartphone,
-    title: 'Custom Apps',
-    tagline: 'iOS, Android, or both',
-    description: 'Mobile apps for gyms, restaurants, member clubs, or any business that wants to be in their customers\' pockets. Built with care, shipped to the App Store.',
+    title: 'Branded App',
+    tagline: 'Your own app',
+    price: '$2,500–$5,000',
+    perMonth: '+ $149–$249/mo',
+    description: 'Your own app for bars, venues, shops and cafes, with ShowMe events and loyalty built in.',
     highlight: false,
-    features: ['Native iOS & Android', 'App Store submission', 'Push notifications', 'Analytics & updates'],
   },
+]
+
+const VALUE_PROPS = [
+  { label: 'Get Found', text: 'Show up on Google and in the app' },
+  { label: 'Real Crowd', text: 'Reach young locals making plans' },
+  { label: 'Fast', text: 'Live in about a week, built by us' },
+  { label: 'No Risk', text: 'First month free if you don\'t love it' },
 ]
 
 const PORTFOLIO = [
   {
     title: 'ShowMe STL',
-    description: 'A St. Louis app for finding places and events, seeing where friends are, and making plans. Featured on KSDK\'s Today in St. Louis.',
+    description: 'A St. Louis app for finding places and events, seeing where friends are, and making plans. Featured on KSDK.',
     image: '/portfolio/showmestl.jpg',
-    tags: ['iOS App', '5.0 on App Store'],
+    tags: ['iOS App'],
   },
   {
     title: 'OpsCompanion',
-    description: 'AI governance software that helps teams use AI safely. Named a 2026 Startup to Watch by the St. Louis Business Journal.',
+    description: 'AI governance software that helps teams use AI safely.',
     image: '/portfolio/opscompanion.jpg',
     tags: ['Website', 'SaaS'],
   },
@@ -68,8 +78,10 @@ export function WebServicesContent() {
     <main className="relative">
       <div className="mx-auto w-full max-w-[72rem] px-4 pb-32 pt-24 sm:px-6">
         <HeroSection />
+        <ValuePropsSection />
         <ServicesSection />
-        <HowItWorksSection />
+        <AddOnsSection />
+        <ShowMeSection />
         <PortfolioSection />
         <CtaSection />
       </div>
@@ -87,12 +99,12 @@ function HeroSection() {
         <span>←</span> Back to ShowMe STL
       </Link>
       <h1 className={`${cabinetGroteskBold.className} text-4xl leading-tight font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
-        Websites & apps for
+        Your spot deserves
         <br />
-        <span className="text-[#FF3B30]">St. Louis businesses</span>
+        <span className="text-[#FF3B30]">to be found.</span>
       </h1>
       <p className="mx-auto mt-6 max-w-2xl text-lg text-white/70 sm:text-xl">
-        We build the ShowMe STL app. Now we&apos;re helping local businesses get online with simple, beautiful websites and custom apps.
+        A website, an app, and a spot in the app St. Louis uses to find what to do.
       </p>
       <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
         <a
@@ -106,21 +118,42 @@ function HeroSection() {
           href="#services"
           className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-8 py-3.5 text-sm font-medium text-white transition-colors hover:bg-white/5"
         >
-          See services
+          See pricing
         </a>
       </div>
     </Reveal>
   )
 }
 
+function ValuePropsSection() {
+  return (
+    <section className="mt-20">
+      <Reveal>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {VALUE_PROPS.map((prop, i) => (
+            <div
+              key={prop.label}
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-center"
+            >
+              <p className="text-xs font-semibold tracking-wider text-[#FF3B30] uppercase">{prop.label}</p>
+              <p className="mt-2 text-sm text-white/80">{prop.text}</p>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+    </section>
+  )
+}
+
 function ServicesSection() {
   return (
-    <section id="services" className="mt-32 scroll-mt-24">
+    <section id="services" className="mt-24 scroll-mt-24">
       <Reveal>
-        <p className="text-sm font-medium tracking-wide text-[#FF3B30] uppercase">Services</p>
+        <p className="text-sm font-medium tracking-wide text-[#FF3B30] uppercase">Pricing</p>
         <h2 className={`${clashGroteskSemibold.className} mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl`}>
-          Three ways we can help
+          Three ways to work with us.
         </h2>
+        <p className="mt-3 text-white/60">Start small. Grow into more whenever you want.</p>
       </Reveal>
 
       <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -144,54 +177,36 @@ function ServiceCard({ service }: { service: typeof SERVICES[number] }) {
           : 'border-white/10 bg-white/[0.03] hover:border-white/20'
       }`}
     >
-      <div className={`flex size-12 items-center justify-center rounded-xl ${service.highlight ? 'bg-[#FF3B30]/20' : 'bg-white/10'}`}>
-        <Icon className={`size-6 ${service.highlight ? 'text-[#FF3B30]' : 'text-white/70'}`} />
+      <div className="flex items-center justify-between">
+        <div className={`flex size-10 items-center justify-center rounded-xl ${service.highlight ? 'bg-[#FF3B30]/20' : 'bg-white/10'}`}>
+          <Icon className={`size-5 ${service.highlight ? 'text-[#FF3B30]' : 'text-white/70'}`} />
+        </div>
+        {service.highlight && (
+          <span className="text-xs font-semibold tracking-wider text-[#FF3B30] uppercase">Start here</span>
+        )}
       </div>
-      <h3 className={`${clashGroteskSemibold.className} mt-4 text-xl font-semibold text-white`}>{service.title}</h3>
-      <p className="text-sm text-white/50">{service.tagline}</p>
-      <p className="mt-3 flex-1 text-sm leading-relaxed text-white/70">{service.description}</p>
-      <ul className="mt-4 space-y-2">
-        {service.features.map((feature) => (
-          <li key={feature} className="flex items-center gap-2 text-sm text-white/60">
-            <span className={`size-1.5 rounded-full ${service.highlight ? 'bg-[#FF3B30]' : 'bg-white/40'}`} />
-            {feature}
-          </li>
-        ))}
-      </ul>
+      <h3 className={`${clashGroteskSemibold.className} mt-4 text-lg font-semibold text-white`}>{service.title}</h3>
+      <div className="mt-3">
+        <span className={`${clashGroteskSemibold.className} text-3xl font-semibold text-white`}>{service.price}</span>
+        <p className="mt-1 text-sm text-white/50">{service.perMonth}</p>
+      </div>
+      <p className="mt-4 flex-1 text-sm leading-relaxed text-white/70">{service.description}</p>
     </div>
   )
 }
 
-function HowItWorksSection() {
+function AddOnsSection() {
   return (
-    <section className="mt-32">
+    <section className="mt-16">
       <Reveal>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 md:p-12">
-          <p className="text-sm font-medium tracking-wide text-[#FF3B30] uppercase">The $100 Website</p>
-          <h2 className={`${clashGroteskSemibold.className} mt-2 text-2xl font-semibold tracking-tight text-white md:text-3xl`}>
-            How it works
-          </h2>
-          <div className="mt-8 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            <Step number={1} title="Send us your info">
-              Your logo, photos, menu, hours — whatever you&apos;ve got. We&apos;ll make it work.
-            </Step>
-            <Step number={2} title="We build your site">
-              A clean, mobile-friendly page that loads fast and looks great.
-            </Step>
-            <Step number={3} title="Hosted on ShowMe STL">
-              Your site lives at yourname.showmestl.app (or a subpath). ShowMe STL users can find you directly.
-            </Step>
-            <Step number={4} title="Your domain connected">
-              We also connect your own domain (e.g. yourbusiness.com) so customers find you either way.
-            </Step>
+        <div className="flex flex-wrap gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-xs font-semibold tracking-wider text-white/50 uppercase">Extra work</p>
+            <p className="mt-1 text-lg font-medium text-white">$75/hr</p>
           </div>
-          <div className="mt-8 rounded-xl bg-white/5 p-6">
-            <p className="text-sm font-medium text-white/90">
-              Why host on ShowMe STL?
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-white/60">
-              Every site we host is part of the ShowMe STL network. That means your business gets discovered by ShowMe STL users browsing local spots — and visitors to your site see they&apos;re part of something bigger in St. Louis. It&apos;s free marketing that works both ways.
-            </p>
+          <div className="flex-1 min-w-[200px]">
+            <p className="text-xs font-semibold tracking-wider text-white/50 uppercase">Booking or ordering add-on</p>
+            <p className="mt-1 text-lg font-medium text-white">$300–$600</p>
           </div>
         </div>
       </Reveal>
@@ -199,21 +214,72 @@ function HowItWorksSection() {
   )
 }
 
-function Step({ number, title, children }: { number: number; title: string; children: ReactNode }) {
+function ShowMeSection() {
   return (
-    <div>
-      <div className="flex size-8 items-center justify-center rounded-full bg-[#FF3B30]/20 text-sm font-medium text-[#FF3B30]">
-        {number}
-      </div>
-      <h3 className="mt-3 text-sm font-medium text-white">{title}</h3>
-      <p className="mt-1 text-sm text-white/50">{children}</p>
-    </div>
+    <section className="mt-24">
+      <Reveal>
+        <div className="rounded-2xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/10 p-8 md:p-12">
+          <div className="grid gap-8 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 className={`${clashGroteskSemibold.className} text-2xl font-semibold tracking-tight text-white md:text-3xl`}>
+                ShowMe STL
+              </h2>
+              <p className="mt-2 text-lg italic text-white/60">Where St. Louis finds what to do.</p>
+              <p className="mt-6 text-sm leading-relaxed text-white/70">
+                Hundreds of young St. Louis people use ShowMe every day to find where to go next. Your site lives on a ShowMe address and on your own domain, and it links straight to your spot in the app. You keep your domain, always.
+              </p>
+              <div className="mt-8 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-6 items-center justify-center rounded bg-[#FF3B30]/20">
+                    <Check className="size-3.5 text-[#FF3B30]" />
+                  </div>
+                  <p className="text-sm font-medium text-white">First month free if you don&apos;t love it</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-6 items-center justify-center rounded bg-[#FF3B30]/20">
+                    <Check className="size-3.5 text-[#FF3B30]" />
+                  </div>
+                  <p className="text-sm font-medium text-white">Cancel anytime</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="w-[180px] rounded-[28px] border border-white/20 bg-[#1a1a1a] p-2 shadow-2xl">
+                <div className="relative flex flex-col rounded-[20px] bg-[#f7f4ee] overflow-hidden" style={{ aspectRatio: '9/16' }}>
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-4 rounded-full bg-[#1a1a1a]" />
+                  <div className="mt-8 mx-3 rounded-lg bg-[#ece6dc] px-2 py-1.5 text-center text-[8px] text-[#5e5a53] tracking-wide">
+                    yourspot.showmestl.app
+                  </div>
+                  <div className="px-3 pt-3 text-[#151412]" style={{ fontFamily: 'Georgia, serif' }}>
+                    <p className="text-lg leading-none">Your Spot</p>
+                    <p className="mt-1.5 text-[7px] tracking-wider font-semibold">
+                      <span className="text-[#2e7d4f]">OPEN NOW</span> · TIL 10PM
+                    </p>
+                  </div>
+                  <div className="mt-3 px-3 grid grid-cols-2 gap-1.5">
+                    <div className="rounded bg-[#151412] py-1.5 text-center text-[7px] font-semibold tracking-wider text-white">BOOK</div>
+                    <div className="rounded border border-[#151412] py-1.5 text-center text-[7px] font-semibold tracking-wider text-[#151412]">MENU</div>
+                  </div>
+                  <div className="mt-3 mx-3 h-14 rounded-lg bg-[#e3dccf] relative">
+                    <div className="absolute left-1/2 top-1/3 w-3 h-3 bg-[#c70f2e] rounded-full" style={{ transform: 'rotate(-45deg)', borderRadius: '50% 50% 50% 0' }} />
+                  </div>
+                  <div className="mt-auto mx-3 mb-3 flex items-center gap-2 rounded-lg bg-[#0e0d0c] px-2 py-2 text-white">
+                    <div className="w-2 h-3 bg-[#c70f2e]" />
+                    <span className="text-[6px] font-semibold tracking-wider">FIND US ON SHOWME STL</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Reveal>
+    </section>
   )
 }
 
 function PortfolioSection() {
   return (
-    <section className="mt-32">
+    <section className="mt-24">
       <Reveal>
         <p className="text-sm font-medium tracking-wide text-[#FF3B30] uppercase">Portfolio</p>
         <h2 className={`${clashGroteskSemibold.className} mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl`}>
@@ -275,11 +341,11 @@ function PortfolioCard({ project }: { project: typeof PORTFOLIO[number] }) {
 
 function CtaSection() {
   return (
-    <section className="mt-32">
+    <section className="mt-24">
       <Reveal>
         <div className="rounded-2xl bg-gradient-to-br from-[#FF3B30]/20 to-[#FF3B30]/5 p-8 text-center md:p-12">
           <h2 className={`${clashGroteskSemibold.className} text-2xl font-semibold tracking-tight text-white md:text-3xl`}>
-            Ready to get started?
+            Let&apos;s get your spot found this week.
           </h2>
           <p className="mx-auto mt-4 max-w-lg text-white/60">
             Reach out and tell us about your business. We&apos;ll get back to you within 24 hours.
@@ -288,7 +354,7 @@ function CtaSection() {
             href={CONTACT_EMAIL}
             className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-medium text-black transition-colors hover:bg-white/90"
           >
-            Get in touch
+            hello@showmestl.app
             <ArrowRight className="size-4" />
           </a>
         </div>
