@@ -1,19 +1,7 @@
-const origin = 'https://nfc-origin.showmestl.app'
+import { appLinkAssociation as association } from '../lib/app-link-association.mjs'
+import { parseSharedContentPath, sharedContentFallbackHtml } from '../lib/shared-content-links.mjs'
 
-const association = {
-  applinks: {
-    details: [{
-      appIDs: [
-        'BPWVXN85FK.com.showmestl.app',
-        '23K7BSC7Q8.com.showmestl.mobilev2',
-      ],
-      components: [
-        { '/': '/check-in', '?': { placeId: '?*' } },
-        { '/': '/raffle/omen' },
-      ],
-    }],
-  },
-}
+const origin = 'https://nfc-origin.showmestl.app'
 
 const fallbackPage = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Omen Coffee raffle · ShowMe STL</title>
@@ -31,7 +19,7 @@ class RewriteNextAsset {
   }
 }
 
-export default {
+const worker = {
   async fetch(request) {
     const url = new URL(request.url)
     if (url.pathname === '/.well-known/apple-app-site-association') {
@@ -39,6 +27,19 @@ export default {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'public, max-age=300',
+        },
+      })
+    }
+
+    if (/^\/(profile|place|event|playlist)\//.test(url.pathname)) {
+      const target = !url.search ? parseSharedContentPath(url.pathname) : null
+      return new Response(sharedContentFallbackHtml(target?.kind, target?.id), {
+        status: target ? 200 : 404,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'public, max-age=300',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'no-referrer',
         },
       })
     }
@@ -61,3 +62,5 @@ export default {
     return fetch(request)
   },
 }
+
+export default worker

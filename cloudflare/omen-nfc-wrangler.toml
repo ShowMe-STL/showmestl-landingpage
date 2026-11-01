@@ -5,5 +5,14 @@ account_id = "955963431efc47bff6ce1c1fba4fb463"
 
 routes = [
   { pattern = "showmestl.app/.well-known/apple-app-site-association", zone_name = "showmestl.app" },
+  { pattern = "www.showmestl.app/.well-known/apple-app-site-association", zone_name = "showmestl.app" },
+  { pattern = "showmestl.app/profile/*", zone_name = "showmestl.app" },
+  { pattern = "showmestl.app/place/*", zone_name = "showmestl.app" },
+  { pattern = "showmestl.app/event/*", zone_name = "showmestl.app" },
+  { pattern = "showmestl.app/playlist/*", zone_name = "showmestl.app" },
+  { pattern = "www.showmestl.app/profile/*", zone_name = "showmestl.app" },
+  { pattern = "www.showmestl.app/place/*", zone_name = "showmestl.app" },
+  { pattern = "www.showmestl.app/event/*", zone_name = "showmestl.app" },
+  { pattern = "www.showmestl.app/playlist/*", zone_name = "showmestl.app" },
   { pattern = "showmestl.app/raffle/omen*", zone_name = "showmestl.app" },
 ]
