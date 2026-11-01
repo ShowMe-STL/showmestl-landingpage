@@ -1,4 +1,4 @@
-import { showMeAppStoreUrl, type SharePreview } from '@/lib/shared-content-links.mjs'
+import { type SharePreview } from '@/lib/shared-content-links.mjs'
 
 const markPath = 'M146.873 247.048h20.721c-.229-2.052-.305-3.032-.697-5.782-2.138-14.99-8.841-29.7-23.787-52.204-17.383-26.173-22.498-39.718-22.395-59.296.11-20.621 4.821-31.885 28.021-67 15.181-22.979 29.671-53.221 30.267-53.974.595.753 15.085 31 30.267 53.974 23.199 35.115 27.91 46.379 28.02 67 .104 19.578-5.011 33.123-22.394 59.296-14.947 22.504-21.65 37.214-23.788 52.204-.392 2.75-.468 3.73-.697 5.782h20.72c5.689 0 10.3 4.611 10.3 10.3v2.345c0 5.689-4.611 10.3-10.3 10.3h-64.258c-5.689 0-10.3-4.611-10.3-10.3v-2.345c0-5.689 4.611-10.3 10.3-10.3z'
 const markStem = 'M179.003 365.214s-13.646-30.477-44.713-44.491c23.712-15.928 29.619-38.454 29.619-38.454h30.187s5.907 22.526 29.619 38.454c-31.067 14.014-44.712 44.491-44.712 44.491'
@@ -49,7 +49,7 @@ function MetaIcon({ kind }: { kind: SharePreview['meta'][number]['kind'] }) {
 function Hero({ preview }: { preview: SharePreview }) {
   if (preview.imageUrls.length >= 2) {
     return (
-      <div className="grid h-full w-full grid-cols-2 grid-rows-2">
+      <div className={`absolute inset-0 grid grid-cols-2 ${preview.imageUrls.length > 2 ? 'grid-rows-2' : 'grid-rows-1'}`}>
         {preview.imageUrls.slice(0, 4).map((src) => (
           // Public photos are hosted on arbitrary https origins, so they are not run through the image optimizer.
           // eslint-disable-next-line @next/next/no-img-element
@@ -61,28 +61,26 @@ function Hero({ preview }: { preview: SharePreview }) {
   if (preview.imageUrl) {
     // Public photos are hosted on arbitrary https origins, so they are not run through the image optimizer.
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={preview.imageUrl} alt={preview.title} className="h-full w-full object-cover" />
+    return <img src={preview.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
   }
-  return <div className="h-full w-full bg-[radial-gradient(120%_80%_at_80%_0%,rgba(192,8,40,0.55),transparent_55%),radial-gradient(90%_70%_at_0%_100%,rgba(58,135,255,0.35),transparent_50%),#141218]" />
+  return <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_80%_0%,rgba(192,8,40,0.55),transparent_55%),radial-gradient(90%_70%_at_0%_100%,rgba(58,135,255,0.35),transparent_50%),#141218]" />
 }
 
 export function ShareLanding({ appUrl, preview }: { appUrl: string; preview: SharePreview }) {
   const longCopy = preview.description.length > 180
   return (
-    <main className="min-h-svh bg-[#090a0c] text-[#171412]">
-      <div className="mx-auto flex min-h-svh w-full max-w-md flex-col">
-        <header className="flex h-12 shrink-0 items-center justify-between px-4 text-white">
+    <main className="h-svh overflow-hidden bg-[#090a0c] text-[#171412]">
+      <div className="relative mx-auto h-svh w-full max-w-md">
+        <header className="absolute inset-x-0 top-0 z-20 flex h-12 items-center px-4 text-white">
           <span className="flex items-center gap-2 text-sm font-semibold">
             <Mark />
-            ShowMe
+            Showme STL
           </span>
-          <a href={appUrl} className="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Open</a>
         </header>
-        <div className="relative h-[58svh] shrink-0 overflow-hidden bg-[#141218]">
+        <div className="absolute inset-x-0 top-12 bottom-[calc(58svh-1.5rem)] overflow-hidden bg-[#141218]">
           <Hero preview={preview} />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#090a0c] to-transparent" />
         </div>
-        <section className="relative -mt-6 flex-1 rounded-t-[20px] bg-[#f6f1ea] px-5 pb-36 pt-6">
+        <section className="absolute inset-x-0 bottom-0 z-10 h-[58svh] overflow-y-auto rounded-t-[20px] bg-[#f6f1ea] px-5 pb-28 pt-6">
           <div className="flex items-start gap-3.5">
             {preview.dateTile && (
               <div className="w-16 shrink-0 overflow-hidden rounded-2xl bg-white text-center shadow-[0_8px_24px_rgba(22,19,17,0.08)]">
@@ -116,10 +114,6 @@ export function ShareLanding({ appUrl, preview }: { appUrl: string; preview: Sha
       <div className="fixed inset-x-0 bottom-0 z-30 flex justify-center">
         <div className="w-full max-w-md bg-[#f6f1ea]/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(9,10,12,0.16)] backdrop-blur-md">
           <a href={appUrl} className="flex h-14 items-center justify-center rounded-2xl bg-[#C00828] text-[17px] font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Open in ShowMe</a>
-          <p className="mt-2.5 text-center text-xs text-[#6b625c]">
-            Don’t have it?{' '}
-            <a href={showMeAppStoreUrl} className="font-semibold text-[#3d3632] underline underline-offset-2">Get it on the App Store</a>
-          </p>
         </div>
       </div>
     </main>

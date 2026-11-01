@@ -5,6 +5,7 @@ import {
   buildEventPreview,
   buildPlacePreview,
   buildPlaylistPreview,
+  buildProfilePreview,
   genericSharePreview,
   safeHttpsUrl,
   type SharePreview,
@@ -86,10 +87,21 @@ async function playlistPreview(id: string): Promise<SharePreview | null> {
   return buildPlaylistPreview(data, extraImages)
 }
 
-// Profiles always take the generic preview and never read the profiles table.
+async function profilePreview(id: string): Promise<SharePreview | null> {
+  const supabase = createPublicClient()
+  if (!supabase) return null
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('avatar_url, avatar_thumb_url')
+    .eq('id', id)
+    .maybeSingle()
+  if (error || !data) return null
+  return buildProfilePreview(data)
+}
+
 export const loadSharePreview = cache(async (kind: string, id: string): Promise<SharePreview | null> => {
   const generic = genericSharePreview(kind)
-  if (!generic || kind === 'profile') return generic
+  if (!generic) return generic
   try {
     const preview = kind === 'place'
       ? await placePreview(id)
@@ -97,7 +109,9 @@ export const loadSharePreview = cache(async (kind: string, id: string): Promise<
         ? await eventPreview(id)
         : kind === 'playlist'
           ? await playlistPreview(id)
-          : null
+          : kind === 'profile'
+            ? await profilePreview(id)
+            : null
     return preview ?? generic
   } catch {
     return generic

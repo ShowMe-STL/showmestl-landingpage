@@ -13,17 +13,20 @@ restoration and the login, phone migration, and onboarding flows. Recipients
 still use their own normal data access rules; sharing never grants friendship
 or access to private profile collections.
 
-The website offers one primary action, Open in ShowMe, using the matching
-`showmestl-v2://KIND/ID` route. A smaller “Don’t have it? Get it on the App Store”
-line sits under that button. There is no automatic deferred handoff from an
-App Store installation, and no second primary action.
+The website offers one action on a valid link, Open in ShowMe, using the matching
+`showmestl-v2://KIND/ID` route. There is no App Store line and no second button
+on that page. An unavailable link still offers the App Store. There is no
+automatic deferred handoff from an App Store installation.
 
 Place, event, and public-playlist pages on the Next.js site load public fields
 (name or title, photo, neighborhood, address, venue, time, short description)
-with the anon Supabase client and no user session. Private playlists stay on
-the generic page. Profile links stay generic: the page does not read the
-profiles table, and a caller-supplied name or photo is dropped from the
-Worker HTML too.
+with the anon Supabase client and no user session. A cover is one full-bleed
+photo: the thumbnail is a fallback, not a second collage tile. Item photos
+fill a playlist hero only when that playlist has no cover. Private playlists
+stay on the generic page. Profile links stay nameless: the page reads only
+`avatar_url` and `avatar_thumb_url`, prefers a JPEG, PNG, or WebP over HEIC,
+and drops a caller-supplied name or bio. HEIC files on Supabase Storage are
+requested through the public image render endpoint so the hero can paint.
 
 The Worker still answers these paths with `sharedContentFallbackHtml` so an
 apex request does not 308 to www. That HTML uses the same photo, cream sheet,
