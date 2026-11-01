@@ -13,11 +13,33 @@ restoration and the login, phone migration, and onboarding flows. Recipients
 still use their own normal data access rules; sharing never grants friendship
 or access to private profile collections.
 
-The website offers an explicit Open ShowMe button using the matching
-`showmestl-v2://KIND/ID` route, an App Store link, and a reminder to return to the
-original link after installing. There is no automatic deferred handoff from an
-App Store installation. Public fallback pages intentionally do not fetch profile
-names, photos, or private content.
+The website offers one primary action, Open in ShowMe, using the matching
+`showmestl-v2://KIND/ID` route. A smaller “Don’t have it? Get it on the App Store”
+line sits under that button. There is no automatic deferred handoff from an
+App Store installation, and no second primary action.
+
+Place, event, and public-playlist pages on the Next.js site load public fields
+(name or title, photo, neighborhood, address, venue, time, short description)
+with the anon Supabase client and no user session. Private playlists stay on
+the generic page. Profile links stay generic: the page does not read the
+profiles table, and a caller-supplied name or photo is dropped from the
+Worker HTML too.
+
+The Worker still answers these paths with `sharedContentFallbackHtml` so an
+apex request does not 308 to www. That HTML uses the same photo, cream sheet,
+and sticky button. When the Worker has `SUPABASE_URL` and `SUPABASE_ANON_KEY`
+(the public anon key, never the service role), it loads the same public
+fields. Without those bindings, or if the read fails, the page stays generic. iMessage `og:video` points at
+`https://showmestl.app/og/showme-share.mp4` (silent H.264, 1200×630). The video
+area in the bubble is not a link tap target. `og:image` is the matching still
+at `https://showmestl.app/og/showme-share.jpg`. Twitter uses
+`summary_large_image` on that still. Titles and descriptions stay content-aware.
+
+Live apex still 308s `/place/1` to www, and the live apex association file is
+missing the four share paths, until this Worker is deployed. `wrangler deploy`
+needs the Cloudflare account credentials. The association source in this repo
+already includes `/profile/*`, `/place/*`, `/event/*`, and `/playlist/*` for
+both app IDs. Do not turn the apex domain back into a redirect to www.
 
 ## Hosting
 

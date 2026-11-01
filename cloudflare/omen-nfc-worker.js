@@ -1,5 +1,5 @@
 import { appLinkAssociation as association } from '../lib/app-link-association.mjs'
-import { parseSharedContentPath, sharedContentFallbackHtml } from '../lib/shared-content-links.mjs'
+import { loadPublicPreview, parseSharedContentPath, sharedContentFallbackHtml } from '../lib/shared-content-links.mjs'
 
 const origin = 'https://nfc-origin.showmestl.app'
 
@@ -20,7 +20,7 @@ class RewriteNextAsset {
 }
 
 const worker = {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url)
     if (url.pathname === '/.well-known/apple-app-site-association') {
       return new Response(JSON.stringify(association), {
@@ -33,7 +33,10 @@ const worker = {
 
     if (/^\/(profile|place|event|playlist)\//.test(url.pathname)) {
       const target = !url.search ? parseSharedContentPath(url.pathname) : null
-      return new Response(sharedContentFallbackHtml(target?.kind, target?.id), {
+      // env is optional. Without the public Supabase URL and anon key the
+      // page stays the generic preview. Profiles are never loaded.
+      const preview = target ? await loadPublicPreview(target.kind, target.id, env) : null
+      return new Response(sharedContentFallbackHtml(target?.kind, target?.id, preview), {
         status: target ? 200 : 404,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
