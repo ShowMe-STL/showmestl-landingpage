@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { appLinkAssociation } from '../lib/app-link-association.mjs'
 import {
+  buildPlaylistPreview,
+  buildProfilePreview,
   formatEventWhen,
   loadPublicPreview,
   parseSharedContentPath,
@@ -29,8 +31,12 @@ for (const host of ['showmestl.app', 'www.showmestl.app']) {
     assert.equal(response.status, 200)
     assert.match(html, new RegExp(`href="showmestl-v2://${kind}/${id}"`))
     assert.match(html, /Open in ShowMe/)
-    assert.match(html, /Don.t have it\?/)
-    assert.match(html, /Get it on the App Store/)
+    assert.match(html, /Showme STL/)
+    assert.doesNotMatch(html, /Don.t have it\?/)
+    assert.doesNotMatch(html, /Get it on the App Store/)
+    assert.doesNotMatch(html, /class="scrim"/)
+    assert.doesNotMatch(html, />Open<\/a>/)
+    assert.match(html, /height:58svh/)
     assert.match(html, /app-id=6760572115/)
     assert.match(html, /noindex,nofollow/)
     assert.match(html, /property="og:image" content="https:\/\/showmestl\.app\/og\/showme-share\.jpg"/)
@@ -51,6 +57,8 @@ for (const path of ['/place/0', '/place/01', '/place/9007199254740992', '/event/
   assert.equal(response.status, 404, path)
   const html = await response.text()
   assert.match(html, /Link unavailable/)
+  assert.match(html, /Get it on the App Store/)
+  assert.match(html, /Showme STL/)
   assert.doesNotMatch(html, /href="showmestl-v2:/)
   assert.doesNotMatch(html, /<script>/)
 }
@@ -72,12 +80,37 @@ const placeHtml = sharedContentFallbackHtml('place', '1558', {
   category: 'Breakfast',
   address: '39 N. Euclid Avenue',
   image_url: 'https://images.example/first-watch.jpg',
+  image_thumb_url: 'https://images.example/first-watch-thumb.jpg',
 })
 assert.match(placeHtml, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/)
 assert.match(placeHtml, /Central West End/)
 assert.match(placeHtml, /Breakfast/)
 assert.match(placeHtml, /https:\/\/images\.example\/first-watch\.jpg/)
+assert.doesNotMatch(placeHtml, /first-watch-thumb/)
 assert.doesNotMatch(placeHtml, /<script>/)
+const playlist = buildPlaylistPreview({
+  name: 'Pizza Spots',
+  image_url: 'https://images.example/cover.jpg',
+  image_thumb_url: 'https://images.example/cover-thumb.webp',
+}, ['https://images.example/place.jpg'])
+assert.deepEqual(playlist.imageUrls, ['https://images.example/cover.jpg'])
+const collage = buildPlaylistPreview({ name: 'Forest Park', image_url: null, image_thumb_url: null }, [
+  'https://images.example/a.jpg',
+  'https://images.example/a-thumb.jpg',
+  'https://images.example/b.jpg',
+])
+assert.deepEqual(collage.imageUrls, ['https://images.example/a.jpg', 'https://images.example/a-thumb.jpg', 'https://images.example/b.jpg'])
+const heicAvatar = buildProfilePreview({
+  avatar_url: 'https://project.supabase.co/storage/v1/object/public/avatars/person/photo.heic',
+  avatar_thumb_url: null,
+})
+assert.match(heicAvatar.imageUrl, /\/storage\/v1\/render\/image\/public\/avatars\/person\/photo\.heic/)
+assert.match(heicAvatar.imageUrl, /width=1200/)
+const webAvatar = buildProfilePreview({
+  avatar_url: 'https://project.supabase.co/storage/v1/object/public/avatars/person/photo.heic',
+  avatar_thumb_url: 'https://project.supabase.co/storage/v1/object/public/avatars/person/thumb.jpg',
+})
+assert.equal(webAvatar.imageUrl, 'https://project.supabase.co/storage/v1/object/public/avatars/person/thumb.jpg')
 const profileId = '12345678-1234-4234-8234-123456789abc'
 const profileHtml = sharedContentFallbackHtml('profile', profileId, {
   name: 'Secret Name',
@@ -96,12 +129,12 @@ for (const host of ['showmestl.app', 'www.showmestl.app']) {
   for (const [kind] of fixtures) assert.ok(routes.includes(`"${host}/${kind}/*"`))
 }
 const previewSource = readFileSync(new URL('../lib/shared-content-preview.ts', import.meta.url), 'utf8')
-assert.doesNotMatch(previewSource, /from\('profiles'\)/)
+assert.match(previewSource, /from\('profiles'\)/)
+assert.match(previewSource, /avatar_url, avatar_thumb_url/)
+assert.doesNotMatch(previewSource, /display_name|instagram_handle|\bbio\b|username/)
 assert.match(previewSource, /kind === 'profile'/)
 const originalFetch = globalThis.fetch
-let fetches = 0
 globalThis.fetch = async (input) => {
-  fetches += 1
   const href = String(input.url ?? input)
   if (href.includes('/rest/v1/places')) {
     return Response.json([{
@@ -114,14 +147,31 @@ globalThis.fetch = async (input) => {
       neighborhoods: { name: 'Central West End' },
     }])
   }
+  if (href.includes('/rest/v1/profiles')) {
+    return Response.json([{
+      avatar_url: 'https://cdn.example/avatar.heic',
+      avatar_thumb_url: 'https://cdn.example/avatar.jpg',
+      display_name: 'Secret Name',
+      bio: 'private bio',
+    }])
+  }
   return Response.json([])
 }
 try {
-  assert.equal(await loadPublicPreview('profile', profileId, {
+  const profileRow = await loadPublicPreview('profile', profileId, {
     SUPABASE_URL: 'https://example.supabase.co',
     SUPABASE_ANON_KEY: 'public-anon',
-  }), null)
-  assert.equal(fetches, 0)
+  })
+  assert.equal(profileRow.avatar_thumb_url, 'https://cdn.example/avatar.jpg')
+  assert.equal(profileRow.display_name, undefined)
+  const profileRich = await worker.fetch(new Request(`https://showmestl.app/profile/${profileId}`), {
+    SUPABASE_URL: 'https://example.supabase.co',
+    SUPABASE_ANON_KEY: 'public-anon',
+  })
+  const profileRichHtml = await profileRich.text()
+  assert.match(profileRichHtml, /src="https:\/\/cdn\.example\/avatar\.jpg"/)
+  assert.doesNotMatch(profileRichHtml, /Secret Name|private bio|avatar\.heic/)
+  assert.match(profileRichHtml, /Find me on ShowMe STL/)
   const rich = await worker.fetch(new Request('https://showmestl.app/place/1558'), {
     SUPABASE_URL: 'https://example.supabase.co',
     SUPABASE_ANON_KEY: 'public-anon',

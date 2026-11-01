@@ -76,7 +76,13 @@ export function formatEventWhen(startIso: string | null | undefined, endIso?: st
 } | null
 export function buildPlacePreview(row: PlacePreviewRow): SharePreview
 export function buildEventPreview(row: EventPreviewRow): SharePreview
+export type ProfilePreviewRow = {
+  avatar_url?: string | null
+  avatar_thumb_url?: string | null
+}
+
 export function buildPlaylistPreview(row: PlaylistPreviewRow, extraImages?: string[]): SharePreview
+export function buildProfilePreview(row: ProfilePreviewRow): SharePreview
 export function loadPublicPreview(
   kind: string,
   id: string,
