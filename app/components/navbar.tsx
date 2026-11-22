@@ -5,12 +5,13 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'motion/react'
 import { Menu, X } from 'lucide-react'
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/store-links'
 import { cabinetGroteskBold, clashGroteskRegular } from '../fonts/config'
-import { InstallQrModal } from './install-qr-modal'
+import { InstallQrModal, type InstallStore } from './install-qr-modal'
 import { LiquidGlassFilter, useLiquidGlassFilter } from './liquid-glass-filter'
+import { PlayStoreIcon } from './play-store-button'
 import styles from './navbar.module.css'
 
-const APP_STORE_URL = 'https://apps.apple.com/app/id6760572115'
 const NAVBAR_DROP_START = 2950
 const NAVBAR_DROP_END = 3100
 const NAVBAR_HIDDEN_Y = -88
@@ -38,12 +39,12 @@ export function Navbar() {
   const liquidGlassMap = useLiquidGlassFilter(glassRef)
   const [isOpen, setIsOpen] = useState(false)
   const toggleMenu = () => setIsOpen(!isOpen)
-  const [qrOpen, setQrOpen] = useState(false)
-  const handleDownload = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const [qrStore, setQrStore] = useState<InstallStore | null>(null)
+  const openStoreQr = (store: InstallStore) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (typeof window === 'undefined') return
     if (window.innerWidth >= 1024) {
       e.preventDefault()
-      setQrOpen(true)
+      setQrStore(store)
     }
   }
   const scrollY = useMotionValue(0)
@@ -125,15 +126,25 @@ export function Navbar() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            whileHover={{ scale: 1.05 }}
+            className="flex items-center gap-1.5"
           >
             <a
-              href="https://apps.apple.com/app/id6760572115"
-              onClick={handleDownload}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-medium text-black transition-colors hover:bg-white/90"
+              href={APP_STORE_URL}
+              onClick={openStoreQr('app-store')}
+              aria-label="Download on the App Store"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-xs font-medium text-black transition-colors hover:bg-white/90 lg:px-4"
             >
               <AppleIcon className="size-3.5" />
-              Download
+              <span className="hidden lg:inline">App Store</span>
+            </a>
+            <a
+              href={PLAY_STORE_URL}
+              onClick={openStoreQr('play-store')}
+              aria-label="Get it on Google Play"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-white px-2.5 py-1.5 text-xs font-medium text-black transition-colors hover:bg-white/90 lg:px-4"
+            >
+              <PlayStoreIcon className="size-3.5" />
+              <span className="hidden lg:inline">Google Play</span>
             </a>
           </motion.div>
         </div>
@@ -185,15 +196,25 @@ export function Navbar() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="pt-6"
+                className="flex flex-col gap-3 pt-6"
               >
                 <a
-                  href="https://apps.apple.com/app/id6760572115"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-base font-medium text-black transition-colors hover:bg-white/90"
-                  onClick={() => setTimeout(toggleMenu, 0)}
+                  href={APP_STORE_URL}
+                  aria-label="Download on the App Store"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                  onClick={() => setIsOpen(false)}
                 >
                   <AppleIcon className="size-4" />
-                  Download
+                  App Store
+                </a>
+                <a
+                  href={PLAY_STORE_URL}
+                  aria-label="Get it on Google Play"
+                  className="inline-flex w-full items-center justify-center gap-2 whitespace-nowrap rounded-full bg-white px-4 py-3 text-sm font-medium text-black transition-colors hover:bg-white/90"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <PlayStoreIcon className="size-4" />
+                  Google Play
                 </a>
               </motion.div>
             </div>
@@ -201,7 +222,12 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-      <InstallQrModal href={APP_STORE_URL} open={qrOpen} onClose={() => setQrOpen(false)} />
+      <InstallQrModal
+        href={qrStore === 'play-store' ? PLAY_STORE_URL : APP_STORE_URL}
+        store={qrStore ?? 'app-store'}
+        open={qrStore !== null}
+        onClose={() => setQrStore(null)}
+      />
     </div>
   )
 }

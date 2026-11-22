@@ -38,6 +38,11 @@ for (const host of ['showmestl.app', 'www.showmestl.app']) {
     assert.doesNotMatch(html, />Open<\/a>/)
     assert.match(html, /height:58svh/)
     assert.match(html, /app-id=6760572115/)
+    assert.match(html, /name="google-play-app" content="app-id=com\.showmestl\.app"/)
+    assert.match(html, /property="al:android:package" content="com\.showmestl\.app"/)
+    assert.match(html, /property="al:android:app_name" content="ShowMe STL"/)
+    assert.doesNotMatch(html, /play\.google\.com/)
+    assert.doesNotMatch(html, /Get it on Google Play/)
     assert.match(html, /noindex,nofollow/)
     assert.match(html, /property="og:image" content="https:\/\/showmestl\.app\/og\/showme-share\.jpg"/)
     assert.match(html, /property="og:image:width" content="1200"/)
@@ -58,6 +63,9 @@ for (const path of ['/place/0', '/place/01', '/place/9007199254740992', '/event/
   const html = await response.text()
   assert.match(html, /Link unavailable/)
   assert.match(html, /Get it on the App Store/)
+  assert.match(html, /Get it on Google Play/)
+  assert.match(html, /https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.showmestl\.app/)
+  assert.doesNotMatch(html, /pli=1/)
   assert.match(html, /Showme STL/)
   assert.doesNotMatch(html, /href="showmestl-v2:/)
   assert.doesNotMatch(html, /<script>/)
@@ -189,4 +197,9 @@ try {
 } finally {
   globalThis.fetch = originalFetch
 }
+const storeLinks = readFileSync(new URL('../lib/store-links.mjs', import.meta.url), 'utf8')
+assert.match(storeLinks, /https:\/\/play\.google\.com\/store\/apps\/details\?id=com\.showmestl\.app/)
+assert.doesNotMatch(storeLinks, /pli=1/)
+assert.match(source, /PLAY_STORE_URL/)
+assert.match(source, /Get it on Google Play/)
 console.log('Shared-link website checks passed: both hosts, all four destinations, fallback HTML, signing identities, invalid links, and existing NFC association paths.')
