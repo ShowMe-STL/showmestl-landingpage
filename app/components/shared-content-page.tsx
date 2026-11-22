@@ -8,6 +8,7 @@ import {
   shareOgVideo,
   sharedContentDetails,
 } from '@/lib/shared-content-links.mjs'
+import { playStoreMetadata } from '@/lib/store-links'
 
 export type SharedContentPageProps = {
   params: Promise<{ id: string }>
@@ -55,6 +56,7 @@ export async function sharedContentMetadata(kind: string, props: SharedContentPa
       images: [shareOgImage.url],
     },
     itunes: { appId: '6760572115', appArgument: details.url },
+    ...playStoreMetadata(details.url),
   }
 }
 

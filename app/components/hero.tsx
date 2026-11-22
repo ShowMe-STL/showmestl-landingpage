@@ -6,7 +6,7 @@ import { cubicBezier, motion, useScroll, useTransform } from 'motion/react'
 import { clashGroteskRegular, clashGroteskSemibold } from '../fonts/config'
 import Grainient from './grainient'
 import IPhoneMockup from './iphone-mockup'
-import { AppStoreCta } from './app-store-cta'
+import { StoreBadges } from './store-badges'
 
 export default function Hero() {
   const { scrollY } = useScroll()
@@ -154,10 +154,10 @@ export default function Hero() {
             Follow people, see their check-ins, and find out where everyone&rsquo;s at — without the group chat chaos.
           </p>
         </motion.div>
-        <div className="absolute left-1/2 top-36 flex -translate-x-1/2 flex-col items-center text-center">
+        <div className="absolute inset-x-4 top-36 flex flex-col items-center text-center sm:inset-x-0">
           <motion.div
             style={{ opacity: contentOpacity, y: contentY }}
-            className="flex flex-col items-center"
+            className="flex w-full flex-col items-center sm:w-auto"
           >
             <h1 className={`${clashGroteskSemibold.className} text-5xl leading-none font-semibold tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl xl:text-[7rem]`}>
               Find Your STL
@@ -165,9 +165,7 @@ export default function Hero() {
             <p className={`${clashGroteskRegular.className} mt-4 text-xl font-normal text-white/60`}>
               Everything Saint Louis has to offer, right in your pocket.
             </p>
-            <div className="mt-12 flex items-center justify-center gap-4">
-              <AppStoreCta href="https://apps.apple.com/app/id6760572115" />
-            </div>
+            <StoreBadges className="mt-12" />
           </motion.div>
           <motion.div ref={phoneRef} style={{ y: phoneY }} className="relative mt-16">
             <motion.div

@@ -6,14 +6,15 @@ import Link from 'next/link'
 import type { ComponentProps, ReactNode } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { siInstagram, siYoutube } from 'simple-icons'
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/lib/store-links'
 import { cabinetGroteskBold } from '../fonts/config'
 import { QRCode } from './qr-code'
-import { InstallQrModal } from './install-qr-modal'
-
-const APP_STORE_URL = 'https://apps.apple.com/app/id6760572115'
+import { InstallQrModal, type InstallStore } from './install-qr-modal'
+import { PlayStoreIcon } from './play-store-button'
+import { StoreBadges } from './store-badges'
 
 export function Footer() {
-  const [qrOpen, setQrOpen] = useState(false)
+  const [qrStore, setQrStore] = useState<InstallStore | null>(null)
   return (
     <footer className="relative mx-auto flex w-full max-w-[72rem] flex-col items-center justify-center rounded-t-4xl border-t border-white/10 bg-[radial-gradient(35%_128px_at_50%_0%,rgba(255,255,255,0.08),transparent)] px-6 pt-12 pb-16 md:rounded-t-[3rem] lg:pt-16 lg:pb-20">
       <div className="absolute top-0 left-1/2 right-1/2 h-px w-1/3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/20 blur" />
@@ -69,6 +70,7 @@ export function Footer() {
               <YouTubeIcon className="size-6" />
             </a>
           </div>
+          <StoreBadges className="md:hidden" />
           <nav aria-label="Legal information" className="flex flex-wrap gap-x-6 text-sm text-white/60">
             <Link
               href="/terms-of-service"
@@ -86,25 +88,19 @@ export function Footer() {
         </AnimatedContainer>
 
         <AnimatedContainer delay={0.2} className="hidden justify-self-start md:block xl:justify-self-end">
-          <div className="flex flex-col items-start gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-white/80">
-              <AppleIcon className="size-3.5" />
-              <span>Scan to install</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setQrOpen(true)}
-              aria-label="Show install QR code"
-              className="group cursor-pointer rounded-2xl border border-white/20 bg-transparent p-3 transition-colors duration-300 hover:border-transparent hover:bg-white focus-visible:border-transparent focus-visible:bg-white focus-visible:outline-none"
-            >
-              <QRCode
-                value={APP_STORE_URL}
-                size={140}
-                fgColor="#ffffff"
-                bgColor="#0f0d10"
-                className="transition-[filter] duration-300 group-hover:invert group-focus-visible:invert"
-              />
-            </button>
+          <div className="flex items-start gap-4">
+            <StoreQr
+              label="App Store"
+              icon={<AppleIcon className="size-3.5" />}
+              value={APP_STORE_URL}
+              onOpen={() => setQrStore('app-store')}
+            />
+            <StoreQr
+              label="Google Play"
+              icon={<PlayStoreIcon className="size-3.5" />}
+              value={PLAY_STORE_URL}
+              onOpen={() => setQrStore('play-store')}
+            />
           </div>
         </AnimatedContainer>
       </div>
@@ -121,9 +117,10 @@ export function Footer() {
         LLC. All rights reserved.
       </p>
       <InstallQrModal
-        href={APP_STORE_URL}
-        open={qrOpen}
-        onClose={() => setQrOpen(false)}
+        href={qrStore === 'play-store' ? PLAY_STORE_URL : APP_STORE_URL}
+        store={qrStore ?? 'app-store'}
+        open={qrStore !== null}
+        onClose={() => setQrStore(null)}
       />
     </footer>
   )
@@ -148,6 +145,41 @@ function YouTubeIcon(props: ComponentProps<'svg'>) {
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
       <path d={siYoutube.path} />
     </svg>
+  )
+}
+
+function StoreQr({
+  label,
+  icon,
+  value,
+  onOpen,
+}: {
+  label: string
+  icon: ReactNode
+  value: string
+  onOpen: () => void
+}) {
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <div className="flex items-center gap-1.5 text-xs text-white/80">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={`Show ${label} install QR code`}
+        className="group cursor-pointer rounded-2xl border border-white/20 bg-transparent p-3 transition-colors duration-300 hover:border-transparent hover:bg-white focus-visible:border-transparent focus-visible:bg-white focus-visible:outline-none"
+      >
+        <QRCode
+          value={value}
+          size={120}
+          fgColor="#ffffff"
+          bgColor="#0f0d10"
+          className="transition-[filter] duration-300 group-hover:invert group-focus-visible:invert"
+        />
+      </button>
+    </div>
   )
 }
 

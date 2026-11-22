@@ -3,15 +3,21 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
+import { PlayStoreIcon } from './play-store-button'
 import { QRCode } from './qr-code'
+
+export type InstallStore = 'app-store' | 'play-store'
 
 interface InstallQrModalProps {
   href: string
   open: boolean
   onClose: () => void
+  store?: InstallStore
 }
 
-export function InstallQrModal({ href, open, onClose }: InstallQrModalProps) {
+export function InstallQrModal({ href, open, onClose, store = 'app-store' }: InstallQrModalProps) {
+  const title = store === 'play-store' ? 'Google Play' : 'App Store'
+  const StoreIcon = store === 'play-store' ? PlayStoreIcon : AppleIcon
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -40,7 +46,7 @@ export function InstallQrModal({ href, open, onClose }: InstallQrModalProps) {
         <motion.div
           role="dialog"
           aria-modal="true"
-          aria-label="Scan to install"
+          aria-label={`Scan to install on ${title}`}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85"
           onClick={onClose}
           initial={{ opacity: 0 }}
@@ -67,10 +73,10 @@ export function InstallQrModal({ href, open, onClose }: InstallQrModalProps) {
               </svg>
             </button>
             <div className="flex items-center gap-3 text-black">
-              <AppleIcon className="size-7" />
+              <StoreIcon className="size-7" />
               <div className="flex flex-col items-start justify-center pr-2 text-left">
                 <span className="text-xs leading-none tracking-tighter">Scan to install</span>
-                <p className="text-xl font-bold leading-tight">App Store</p>
+                <p className="text-xl font-bold leading-tight">{title}</p>
               </div>
             </div>
             <motion.div

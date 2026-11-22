@@ -35,7 +35,7 @@ landing-page/
 ├── app/
 │   ├── components/
 │   │   ├── app-store-button.tsx       # The "Download on the App Store" button graphic
-│   │   ├── app-store-cta.tsx          # Wraps AppStoreButton; opens QR modal on desktop (≥1024px)
+│   │   ├── store-badges.tsx           # App Store + Google Play badges; QR modal on desktop (≥1024px)
 │   │   ├── footer-section.tsx         # Footer with brand block, link columns, QR, socials
 │   │   ├── grainient.tsx              # WebGL animated gradient (ogl)
 │   │   ├── grainient.css
@@ -43,7 +43,7 @@ landing-page/
 │   │   ├── install-qr-modal.tsx       # Centered overlay with scaled-up QR
 │   │   ├── iphone-mockup.tsx          # Phone frame + screenshot slot
 │   │   ├── navbar.tsx                 # Fixed glass pill + mobile slide-out menu
-│   │   ├── play-store-button.tsx      # (unused — Android not shipped yet)
+│   │   ├── play-store-button.tsx      # "Get it on Google Play" badge, matched to the App Store badge
 │   │   └── qr-code.tsx                # SVG QR renderer with rounded finder patterns
 │   ├── favicon.ico
 │   ├── globals.css                    # font import, color-scheme: dark, page bg
@@ -177,6 +177,7 @@ Accepts `children` for content stacked inside the cutout (used for crossfading s
 ## URLs and config
 
 - App Store URL: `https://apps.apple.com/app/id6760572115` (short form — also encodes more compactly into QR codes)
+- Google Play URL: `https://play.google.com/store/apps/details?id=com.showmestl.app` (no `&pli=1`)
 - Parent company site: `https://showmecities.com`
 - Support email: `support@showmestl.app`
 - Instagram: `https://www.instagram.com/showmestl.app/`

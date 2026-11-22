@@ -5,13 +5,13 @@ type AppStoreButtonProps = React.ComponentProps<'button'>
 export function AppStoreButton({ className = '', ...props }: Omit<AppStoreButtonProps, 'children'>) {
   return (
     <button
-      className={`inline-flex h-14 items-center justify-center gap-3 rounded-lg bg-white px-5 text-black transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${className}`}
+      className={`inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-white px-3 text-black transition-colors hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:h-14 sm:gap-3 sm:px-5 ${className}`}
       {...props}
     >
-      <AppleIcon className="size-7" />
-      <div className="flex flex-col items-start justify-center pr-2 text-left">
-        <span className="text-xs leading-none tracking-tighter">Download on the</span>
-        <p className="text-xl font-bold leading-tight">App Store</p>
+      <AppleIcon className="size-6 shrink-0 sm:size-7" />
+      <div className="flex flex-col items-start justify-center pr-1 text-left sm:pr-2">
+        <span className="text-[10px] leading-none tracking-tighter whitespace-nowrap sm:text-xs">Download on the</span>
+        <p className="text-lg font-bold leading-tight whitespace-nowrap sm:text-xl">App Store</p>
       </div>
     </button>
   )
