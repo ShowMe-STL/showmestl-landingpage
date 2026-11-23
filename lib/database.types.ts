@@ -1617,6 +1617,48 @@ export type Database = {
           },
         ]
       }
+      place_media: {
+        Row: {
+          id: number
+          kind: string
+          object_path: string
+          place_id: number
+          position: number
+          poster_path: string | null
+        }
+        Insert: {
+          id?: never
+          kind: string
+          object_path: string
+          place_id: number
+          position: number
+          poster_path?: string | null
+        }
+        Update: {
+          id?: never
+          kind?: string
+          object_path?: string
+          place_id?: number
+          position?: number
+          poster_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "place_media_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "place_media_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places_with_coords"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       place_visits: {
         Row: {
           last_visited_at: string | null

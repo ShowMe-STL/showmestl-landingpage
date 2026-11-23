@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, type FormEvent } from 'react'
+import { useRef, useState, useTransition, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,10 @@ import { MultiSelectPicker } from '@/components/multi-select-picker'
 import { SearchableSelect } from '@/components/searchable-select'
 import { createPlace, updatePlace, type PlaceInput } from '@/lib/actions/places'
 import { geocodeAddress } from '@/lib/actions/geocode'
+import {
+  PlaceMediaGallery,
+  type PlaceMediaGalleryHandle,
+} from './place-media-gallery'
 import type { Place } from './places-manager'
 
 const NONE = '__none__'
@@ -47,6 +51,9 @@ export function PlaceDialog({
   onSaved: () => void
 }) {
   const [form, setForm] = useState(() => toFormState(place))
+  const [persistedId, setPersistedId] = useState<number | null>(place?.id ?? null)
+  const [mediaBusy, setMediaBusy] = useState(false)
+  const mediaRef = useRef<PlaceMediaGalleryHandle>(null)
   const [isPending, startTransition] = useTransition()
   const [isGeocoding, startGeocode] = useTransition()
 
@@ -56,6 +63,7 @@ export function PlaceDialog({
   if (lastKey !== key) {
     setLastKey(key)
     setForm(toFormState(place))
+    setPersistedId(place?.id ?? null)
   }
 
   function handleGeocode() {
@@ -96,12 +104,32 @@ export function PlaceDialog({
         longitude: form.longitude ? Number(form.longitude) : null,
       }
 
-      const result = place
-        ? await updatePlace(place.id, input)
-        : await createPlace(input)
+      let id = place?.id ?? persistedId
+      if (id) {
+        const result = await updatePlace(id, input)
+        if (result && 'error' in result && result.error) {
+          toast.error(result.error)
+          return
+        }
+      } else {
+        const result = await createPlace(input)
+        if ('error' in result) {
+          toast.error(result.error)
+          return
+        }
+        id = result.id
+        setPersistedId(id)
+      }
 
-      if (result && 'error' in result && result.error) {
-        toast.error(result.error)
+      if (id == null) {
+        toast.error('Could not save the place.')
+        return
+      }
+
+      const mediaError = await mediaRef.current?.flushPending(id)
+      if (mediaError) {
+        toast.error(mediaError)
+        onSaved()
         return
       }
 
@@ -113,7 +141,7 @@ export function PlaceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{place ? 'Edit place' : 'Add place'}</DialogTitle>
@@ -285,35 +313,61 @@ export function PlaceDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  type="url"
-                  value={form.image_url}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, image_url: e.target.value }))
-                  }
-                />
+            <PlaceMediaGallery
+              ref={mediaRef}
+              placeId={place?.id ?? persistedId}
+              cardImageUrl={form.image_thumb_url || form.image_url || null}
+              onCoverChange={(imageUrl, imageThumbUrl) =>
+                setForm((current) => ({
+                  ...current,
+                  image_url: imageUrl ?? current.image_url,
+                  image_thumb_url: imageThumbUrl ?? current.image_thumb_url,
+                }))
+              }
+              onBusyChange={setMediaBusy}
+            />
+
+            <details className="rounded-lg border border-white/10 p-3">
+              <summary className="cursor-pointer text-sm font-medium">
+                Card image URLs
+              </summary>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="image_url">Image URL</Label>
+                  <Input
+                    id="image_url"
+                    type="url"
+                    value={form.image_url}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, image_url: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="image_thumb_url">Thumbnail URL</Label>
+                  <Input
+                    id="image_thumb_url"
+                    type="url"
+                    value={form.image_thumb_url}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        image_thumb_url: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="image_thumb_url">Thumbnail URL</Label>
-                <Input
-                  id="image_thumb_url"
-                  type="url"
-                  value={form.image_thumb_url}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, image_thumb_url: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Filled from the first photo. Save any hand-edited URLs before
+                adding gallery media.
+              </p>
+            </details>
           </div>
 
           <DialogFooter>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Saving…' : 'Save'}
+            <Button type="submit" disabled={isPending || mediaBusy}>
+              {isPending || mediaBusy ? 'Saving…' : 'Save'}
             </Button>
           </DialogFooter>
         </form>

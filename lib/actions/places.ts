@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireModerator } from '@/lib/auth'
+import { deleteStoredPlaceMedia } from '@/lib/place-media-storage'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export type PlaceInput = {
@@ -121,5 +122,11 @@ export async function deletePlace(id: number) {
   const { error } = await supabase.from('places').delete().eq('id', id)
 
   if (error) return { error: error.message }
+  try {
+    await deleteStoredPlaceMedia(id)
+  } catch {
+    // The place row is already gone. Leftover storage objects can be
+    // removed later without blocking the delete.
+  }
   revalidatePath('/places')
 }
